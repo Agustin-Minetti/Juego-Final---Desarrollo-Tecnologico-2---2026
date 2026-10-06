@@ -1,0 +1,6 @@
+export const MOVE_SPEED = 200;
+export const ACCELERATION = 2400;
+export const GRAVITY = 1200;
+export const JUMP_VELOCITY = -480;
+export const COYOTE_TIME_MS = 100;
+export const JUMP_BUFFER_MS = 100;

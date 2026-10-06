@@ -1,0 +1,24 @@
+import Phaser from 'phaser';
+import { BootScene } from './scenes/BootScene';
+import { GameScene } from './scenes/GameScene';
+import { GAME_WIDTH, GAME_HEIGHT } from './config/game';
+
+new Phaser.Game({
+  type: Phaser.AUTO,
+  parent: 'game-container',
+  backgroundColor: '#1a1626',
+  scale: {
+    mode: Phaser.Scale.FIT,
+    autoCenter: Phaser.Scale.CENTER_BOTH,
+    width: GAME_WIDTH,
+    height: GAME_HEIGHT,
+  },
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { x: 0, y: 0 },
+      debug: false,
+    },
+  },
+  scene: [BootScene, GameScene],
+});
