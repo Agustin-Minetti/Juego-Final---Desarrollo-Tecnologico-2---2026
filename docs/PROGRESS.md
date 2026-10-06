@@ -48,5 +48,17 @@ Pendiente humano:
 Pendientes conocidos:
 
 - `levels/` vacío (niveles desde el Hito 3); `src/objects/` y `src/fx/` con placeholder (desde Hito 2).
-- La forma exacta del JSON de nivel (`grid` de strings) es un supuesto a confirmar en el Hito 2 con `levelParser`.
 - Playwright opcional no instalado (chequeo visual fuera de alcance acordado).
+
+### Aclaraciones de diseño — bloque Hito 2 (rama `feature/hito-1-esqueleto`)
+
+Análisis de ambigüedades del documento de diseño (`.docx` + `DESIGN.md`) y cuestionario al usuario. El bloque del Hito 2 quedó resuelto y **integrado en `docs/DESIGN.md`**:
+
+- Formato JSON de nivel: `timeTarget` + `grid` de 1 carácter (alfabeto fijo) + `entities` para botones/palancas/compuertas con `id`.
+- Movimiento: aceleración/desaceleración 2400 px/s²; salto variable con corte `velocityY ×= 0.5` solo al subir.
+- Hitbox 24 × 40 px; sin colisión entre personajes; inactivo con Tab quieto pero con física activa.
+- Criterio "encima/pisar": contacto cara inferior del personaje con la cara superior del elemento.
+- Paleta hex confirmada (ya estaba en `colors.ts`); gema dorada = Lumo, violeta = Umbra.
+- Nueva sección `DESIGN.md` → *Decisiones de diseño*: registro de lo resueltí y del pendiente por hito (3 a 6).
+
+Verificación: solo documentación; no se tocó código ni tests. Pendiente humano: revisar el `DESIGN.md` actualizado. Pendiente del agente: cuestionario de los bloques Hito 3+ (aún sin resolver: pozos, pausa, compuertas, palancas, pantallas, etc.).

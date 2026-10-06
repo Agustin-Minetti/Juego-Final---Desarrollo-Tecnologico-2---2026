@@ -43,7 +43,24 @@ El núcleo son dos personajes con física de plataformas, tres tipos de pozo, pu
 
 Teclas globales: R reinicia el nivel al instante, Esc pausa, Tab cambia de personaje en modo un jugador.
 
-Parámetros de movimiento iniciales: velocidad horizontal 200 px/s, aceleración alta para respuesta inmediata, gravedad 1200 px/s², salto -480 px/s. Incluir coyote time (100 ms para saltar después de dejar el borde) y jump buffer (100 ms para registrar el salto apretado justo antes de tocar el piso). Salto variable: soltar la tecla corta el salto.
+Parámetros de movimiento iniciales:
+
+| Parámetro | Valor |
+| --- | --- |
+| Velocidad horizontal máxima | 200 px/s |
+| Aceleración | 2400 px/s² |
+| Desaceleración al soltar las teclas | 2400 px/s² (misma magnitud: respuesta casi sin deslizamiento) |
+| Gravedad | 1200 px/s² |
+| Velocidad de salto inicial | -480 px/s |
+| Coyote time | 100 ms para saltar después de dejar el borde |
+| Jump buffer | 100 ms para registrar el salto apretado justo antes de tocar el piso |
+| Salto variable | Al soltar la tecla de salto estando en ascenso (`velocityY < 0`), se multiplica `velocityY` por 0.5. Si se mantiene, salto completo; si se suelta pronto, salto bajo. |
+
+Hitbox de ambos personajes: rectángulo de colisión de **24 × 40 px** (0,75 × 1,25 tiles), centrado en el sprite.
+
+Colisión entre personajes: **Lumo y Umbra no colisionan entre sí**. Se ignoran mutuamente en la física; interactúan solo a través de botones, palancas, pozos, gemas y demás elementos del nivel.
+
+Modo un jugador (Tab): el personaje inactivo **queda quieto** (se le pone la velocidad horizontal a 0) pero **con física activa**: la gravedad y las colisiones siguen corriendo, de modo que si está sobre un pozo o el abismo puede caer y morir sin control. El jugador debe dejarlo en zona segura antes de cambiar.
 
 ### Elementos del nivel
 
@@ -63,6 +80,8 @@ Parámetros de movimiento iniciales: velocidad horizontal 200 px/s, aceleración
 
 El cristal oscuro y la barrera de luz son simétricos a propósito: cada personaje puede abrirle camino al otro, lo que refuerza la cooperación con un solo tipo de lógica (un bloque que se elimina al contacto del personaje correcto).
 
+Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que un personaje está **encima** de la puerta, o **pisando** el botón, cuando la **cara inferior del personaje está en contacto con la cara superior del elemento** (colisión de suelo clásica de plataformas, la que produce Arcade Physics con los colliders). Rozar el lateral del elemento no cuenta.
+
 ### Victoria, derrota y puntaje
 
 - Si un personaje muere, partículas de muerte durante 0,5 s y reinicio automático del nivel.
@@ -77,6 +96,51 @@ Con Tab se alterna el control entre Lumo y Umbra; el personaje inactivo queda qu
 ## Niveles
 
 Los niveles son archivos JSON con una grilla de texto de 30 × 17 tiles de 32 px (960 × 544). Así el agente los genera y valida, y se editan a mano sin herramientas extra.
+
+### Formato JSON del nivel
+
+Cada `levels/NN.json` tiene esta estructura:
+
+```json
+{
+  "timeTarget": 45,
+  "grid": [
+    "..............................",
+    "  (17 filas de 30 caracteres)  ",
+    ".............................."
+  ],
+  "entities": [
+    { "type": "button", "id": "rojo", "x": 5, "y": 12 },
+    { "type": "gate",   "id": "rojo", "x": 10, "y": 9 },
+    { "type": "lever",  "id": "azul", "x": 20, "y": 12 }
+  ]
+}
+```
+
+- **`timeTarget`** (number, segundos): tiempo objetivo del nivel para la estrella de tiempo. Obligatorio; `validate-levels` lo exige y debe ser `> 0`.
+- **`grid`** (array de 17 strings de 30 caracteres): terreno y elementos estáticos. Alfabeto de un carácter por tile:
+
+| Carácter | Significado |
+| --- | --- |
+| `.` | Vacío |
+| `#` | Pared / piso sólido (sólido para ambos) |
+| `L` | Spawn de Lumo (exactamente uno por nivel) |
+| `U` | Spawn de Umbra (exactamente uno por nivel) |
+| `l` | Puerta de Lumo (exactamente una por nivel) |
+| `u` | Puerta de Umbra (exactamente una por nivel) |
+| `p` | Pozo de luz (disuelve a Umbra; Lumo lo atraviesa) |
+| `s` | Pozo de sombra (apaga a Lumo; Umbra lo atraviesa) |
+| `a` | Abismo (mata a ambos) |
+| `c` | Cristal oscuro (Lumo lo disuelve) |
+| `b` | Barrera de luz (Umbra la apaga) |
+| `d` | Gema dorada (la recoge Lumo) |
+| `v` | Gema violeta (la recoge Umbra) |
+
+- **`entities`** (array): botones, palancas y compuertas, que necesitan **ID** para vincularse entre sí. Cada entidad tiene `type` (`button` \| `lever` \| `gate`), `id` (string compartido entre los elementos que se controlan entre sí) y `x` / `y` (columna y fila en la grilla, 0-based). El detalle de la dirección del deslizamiento de las compuertas se define en el Hito 4.
+
+Asignación de gemas: **dorada (`d`) = Lumo**, **violeta (`v`) = Umbra**. Un personaje que toca la gema del otro simplemente la ignora (no la recoge, no hay penalización).
+
+`validate-levels` valida los archivos `NN.json` (01–08): nombre, `timeTarget`, grilla 17×30, alfabeto permitido, exactamente un `L` y un `U`, exactamente una `l` y una `u`, y coherencia de `entities` (tipos válidos, IDs no vacíos, coordenadas dentro de la grilla). El archivo `levels/test.json` del Hito 2 es un nivel de prueba **fuera de la progresión**: el validador lo ignora (no exige el patrón `NN.json` ni lo cuenta).
 
 ### Progresión de los 8 niveles
 
@@ -96,6 +160,21 @@ Los niveles los propone el agente, pero cada uno tiene que pasar la prueba jugan
 Todo el arte se genera por código: formas geométricas, colores planos y efectos. No hay sprites externos, así el agente puede producir y ajustar todo solo.
 
 Estilo visual: ruinas al atardecer (fondo #1a1626, paredes #2e2a3d con borde más claro). Lumo es un círculo amarillo cálido con un halo suave; Umbra, una figura violeta oscura con contorno claro para que se distinga del fondo. Los pozos tienen superficie animada (onda senoidal): los de luz brillan y los de sombra ondulan como humo. Las texturas se generan al iniciar con Graphics + generateTexture en una escena de carga.
+
+Paleta confirmada (vive en `src/config/colors.ts`):
+
+| Elemento | Hex |
+| --- | --- |
+| Fondo | `#1a1626` |
+| Pared | `#2e2a3d` |
+| Borde de pared | `#4a4463` |
+| Texto | `#f5efe0` |
+| Lumo | `#ffd166` |
+| Halo de Lumo | `#ffe9a8` |
+| Umbra | `#7b4bbd` |
+| Contorno de Umbra | `#c9a6ff` |
+| Pozo de luz | `#ffe08a` |
+| Pozo de sombra | `#4b2d73` |
 
 Juice (en orden de prioridad):
 
@@ -219,3 +298,68 @@ Prompt: "Implementá el juice en el orden de la sección Estética, los efectos 
 - [ ] Los 8 niveles completables con 3 estrellas.
 
 Si el agente se traba: pedirle que relea la skill de Phaser del subsistema afectado en `docs/phaser-skills/`, que agregue un test que reproduzca el problema si es lógica, o que active `?debug=1` y describa lo que pasa si es física.
+
+## Decisiones de diseño (aclaraciones al documento)
+
+Esta sección registra las ambigüedades detectadas en el análisis del documento y su resolución. Las decisiones **ya integradas** en las secciones correspondientes aparecen como resueltas; las **pendientes** se van resolviendo con el usuario antes del hito que las necesita. El `.docx` original no se modifica: esta sección y el cuerpo actualizado de `DESIGN.md` son la referencia vigente.
+
+### Resueltas — bloque del Hito 2
+
+| # | Ambigüedad | Decisión |
+| --- | --- | --- |
+| A1 | Formato del JSON de nivel | Grilla de 1 carácter por tile + array `entities` (botones/palancas/compuertas con `type`, `id`, `x`, `y`) + campo `timeTarget`. Alfabeto fijo en *Niveles > Formato JSON del nivel*. |
+| A2 | Tiempo objetivo por nivel | Campo `timeTarget` (segundos) en cada `levels/NN.json`; obligatorio y validado por `validate-levels`. |
+| A3 | "Aceleración alta" sin número | Aceleración 2400 px/s² y desaceleración 2400 px/s² al soltar las teclas. |
+| A4 | Mecánica del salto variable | Al soltar la tecla en ascenso, `velocityY ×= 0.5` (solo si `velocityY < 0`). |
+| B4 | Hitbox de los personajes | Rectángulo de colisión de 24 × 40 px centrado en el sprite. |
+| B5 | Criterio de "encima"/"pisar" | Contacto de la cara inferior del personaje con la cara superior del elemento. |
+| B3 | Colisión entre personajes | No colisionan entre sí; se ignoran en la física. |
+| B8 | Personaje inactivo (Tab) | Velocidad horizontal a 0, física activa: puede caer y morir sin control. |
+| M1 | Colores cualitativos | Paleta hex confirmada (ver *Estética*); vive en `src/config/colors.ts`. |
+| — | Asignación de gemas | Dorada (`d`) = Lumo; violeta (`v`) = Umbra. El personaje equivocado la ignora. |
+| — | `levels/test.json` | Nivel de prueba del Hito 2, fuera de la progresión; `validate-levels` lo ignora. |
+
+### Pendientes — resolver antes del hito indicado
+
+**Hito 3 — Peligros y puertas:**
+
+| # | Ambigüedad |
+| --- | --- |
+| A6 | Comportamiento geométrico del pozo para el personaje que no muere ("atraviesa"): ¿cae por un hueco sin colisión? ¿hay piso debajo? |
+| B1 | Efecto de la pausa (Esc) sobre el cronómetro, la física y las teclas. |
+| B2 | Resolución cuando muerte y victoria ocurren en el mismo frame. |
+| B7 | Alcance exacto del reseteo con R y por muerte (se asume: todo el estado del nivel). |
+| — | Confirmar la letra del abismo (`a`) y de pozos (`p`/`s`) con los primeros niveles. |
+
+**Hito 4 — Botones y elementos:**
+
+| # | Ambigüedad |
+| --- | --- |
+| A5 | Compuertas: ¿matan al cerrarse sobre alguien?, dirección del deslizamiento, solidez durante el tween de 200 ms. |
+| A7 | Palanca: detección de alterno (borde de contacto vs. solape) y quién puede usarla. |
+| A8 | Cristal oscuro / barrera de luz: ¿siguen sólidos durante sus 300 ms de desaparición? |
+| B9 | Qué cuenta como compuerta que "aplasta o atrapa de forma injusta" (checklist del Hito 4). |
+| B10 | Nivel 7: qué pasa si el jugador realiza las acciones en el orden incorrecto. |
+| C3 | Confirmar que R y la muerte resetean botones, palancas, compuertas, cristales, barreras y gemas. |
+
+**Hito 5 — Pantallas y progreso:**
+
+| # | Ambigüedad |
+| --- | --- |
+| C2 | Si existe puntaje numérico o solo gemas + estrellas (se usará "gemas", no "puntaje"). |
+| M3 | Menú: si "Jugar" es un tercer botón o solo [Un jugador, Dos jugadores]. |
+| M4 | Botones de la pausa y de la pantalla de resultado. |
+| M5 | Formato del HUD (gemas 3/5, tiempo mm:ss). |
+| M2 | Sonido: si faltan efectos (compuerta, palanca, cristal, barrera, puerta) o se omiten a propósito. |
+
+**Hito 6 — Pulido (pueden quedar como convención del agente):**
+
+| # | Ambigüedad |
+| --- | --- |
+| M6 | `objects/`: dónde viven palanca, cristal, barrera y gema respecto a la lista actual. |
+| M7 | Tilemap vs. grupo estático de Arcade para las paredes. |
+| M8 | Pause como escena separada u overlay; si Boot es la escena de carga de `generateTexture`. |
+| M9 | Alcance final de `validate-levels` una vez cerrado el formato del JSON. |
+| M10 | Criterio de "los 8 niveles completables con 3 estrellas" (por el agente en modo un jugador vs. por un jugador razon). |
+| M11 | Fijar versiones de Vite, TypeScript y Vitest en `package.json` (solo Phaser está fija hoy). |
+| C1 | Unificar "7 a 10 días" (*Resumen*) vs. "unos 8 días hábiles" (*Plan por hitos*). |
