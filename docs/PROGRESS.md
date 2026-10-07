@@ -87,3 +87,17 @@ Cuestionario del bloque Hito 4 resuelto con el usuario e **integrado en `docs/DE
 - **C3** Reset de switches: confirmado por B7 (se retiró del listado de pendientes).
 
 Pendientes: bloques de los Hitos 5 y 6 (pantallas y progreso; pulido) — listados en `DESIGN.md → Decisiones de diseño`.
+
+### Aclaraciones de diseño — bloque Hito 5 (en working tree, sin commitear)
+
+Cuestionario del bloque Hito 5 resuelto con el usuario e **integrado en `docs/DESIGN.md`**:
+
+- **C2** No existe puntaje numérico: el progreso se mide por **gemas** (X/Y), **tiempo** y **estrellas**; se reemplazó "puntaje" por "gemas" donde describía el conteo.
+- **M3** Menú principal sin "Jugar": directo **[Un jugador]** y **[Dos jugadores]**; elegir modo abre el selector de niveles.
+- **M4** Pausa: [Reanudar (Esc)] [Reiniciar (R)] [Silencio]. Resultado: [Siguiente nivel] [Reintentar] [Volver al menú]; en el nivel 8 se omite "Siguiente".
+- **M5** HUD: tiempo `mm:ss` + gemas `X/Y` + icono 1P/2P; sin estrellas en el HUD (no spoilear el objetivo de tiempo).
+- **M2** Se mantienen **solo los 5 efectos** de sonido (salto, gema, botón, muerte, victoria); compuerta, palanca, cristal, barrera y puerta no se sonorizan.
+
+Pendientes: bloque del Hito 6 (pulido: M6–M11 y C1) — listado en `DESIGN.md → Decisiones de diseño`.
+
+Nota Git: los bloques de los Hitos 4 y 5 están **en working tree sin commitear** (pendiente de autorización).

@@ -78,7 +78,7 @@ Modo un jugador (Tab): el personaje inactivo **queda quieto** (se le pone la vel
 | Compuerta | Bloque sólido que se desliza **hacia arriba** al abrirse (tween de 200 ms); nunca mata y detiene el cierre si un personaje ocupa el tile destino (ver abajo) |
 | Cristal oscuro | Sólido para ambos; Lumo lo disuelve al tocarlo: pierde solidez al instante y la animación de desaparición dura 300 ms |
 | Barrera de luz | Sólida para ambos; Umbra la apaga al tocarla: pierde solidez al instante y la animación de desaparición dura 300 ms |
-| Gema dorada / violeta | Solo la recoge su personaje; suma al puntaje |
+| Gema dorada / violeta | Solo la recoge su personaje; cuenta en el total de gemas del nivel |
 
 El cristal oscuro y la barrera de luz son simétricos a propósito: cada personaje puede abrirle camino al otro, lo que refuerza la cooperación con un solo tipo de lógica (un bloque que se elimina al contacto del personaje correcto).
 
@@ -96,6 +96,7 @@ Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que
 - Prioridad de muerte: si en un mismo frame un personaje muere y el otro cumple la condición de victoria, **gana la muerte** y se reinicia el nivel. La victoria solo se evalúa si ambos personajes están vivos al final del frame.
 - Reseteo (R y por muerte): **reset total del nivel** — spawns de ambos, cronómetro a 0, gemas sin recoger, botones sin pisar, palancas en su estado inicial, compuertas cerradas, cristales y barreras restaurados. Se mantiene el modo de control (1PJ/2PJ) y el progreso desbloqueado.
 - Al ganar: pantalla de resultado con tiempo, gemas y estrellas.
+- No existe puntaje numérico: el progreso se mide por **gemas recogidas** (contador X/Y), el **tiempo final** y las **estrellas**.
 - Estrellas: 1 por terminar, 1 por recoger todas las gemas, 1 por terminar bajo el tiempo objetivo del nivel.
 - Progreso (niveles desbloqueados y mejores estrellas) guardado en localStorage.
 
@@ -194,9 +195,15 @@ Juice (en orden de prioridad):
 4. Brillo en las puertas cuando su personaje está encima, usando el sistema de Filters de Phaser 4 (Glow).
 5. Transición de fundido entre niveles.
 
-Sonido: efectos cortos generados con jsfxr y exportados a .wav en `public/sfx/` (salto, gema, botón, muerte, victoria). Música: opcional y solo si sobra tiempo. Botón de silencio en la pausa.
+Sonido: efectos cortos generados con jsfxr y exportados a .wav en `public/sfx/`. Solo estos cinco eventos tienen sonido: **salto, gema, botón, muerte y victoria**; los demás elementos (compuerta, palanca, cristal, barrera y puerta) no se sonorizan. Música: opcional y solo si sobra tiempo. Botón de silencio en la pausa.
 
-Pantallas: menú principal (Jugar, Un jugador / Dos jugadores), selector de niveles con estrellas, HUD mínimo (tiempo y gemas), pausa y resultado.
+Pantallas:
+
+- **Menú principal:** [Un jugador] y [Dos jugadores] (no existe botón "Jugar"). Elegir el modo abre el **selector de niveles**.
+- **Selector de niveles:** niveles 01–08 con sus estrellas; desbloqueo en orden; solo se puede elegir el nivel más alto desbloqueado o los ya completados.
+- **HUD (durante el nivel):** tiempo en `mm:ss` (ej. `01:23`), gemas como `X/Y` (ej. `3/5`) e icono del modo (1P/2P). Sin estrellas en el HUD (no spoilear el objetivo de tiempo).
+- **Pausa:** [Reanudar (Esc)] [Reiniciar (R)] [Silencio].
+- **Resultado:** tiempo, gemas y estrellas, y los botones [Siguiente nivel] [Reintentar] [Volver al menú]. En el nivel 8 se omite "Siguiente" (queda [Reintentar] [Volver al menú]).
 
 ## Arquitectura
 
@@ -350,17 +357,17 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | B10 | Nivel 7: orden de acciones | Palancas reversibles (se pueden re-alternar): el orden incorrecto agrega pasos pero **nunca** deja el nivel sin resolver. |
 | C3 | Reset de switches | Confirmado por B7: botones, palancas, compuertas, cristales, barreras y gemas se restauran con R y por muerte. |
 
+### Resueltas — bloque del Hito 5
+
+| # | Ambigüedad | Decisión |
+| --- | --- | --- |
+| C2 | Puntaje numérico vs. gemas + estrellas | No existe puntaje numérico: el progreso se mide por **gemas recogidas** (contador X/Y), **tiempo** y **estrellas**. En el documento se usa "gemas", no "puntaje". |
+| M3 | Botón "Jugar" en el menú | No existe: el menú principal ofrece directamente **[Un jugador]** y **[Dos jugadores]**; elegir el modo abre el selector de niveles. |
+| M4 | Botones de pausa y de resultado | Pausa: [Reanudar (Esc)] [Reiniciar (R)] [Silencio]. Resultado: [Siguiente nivel] [Reintentar] [Volver al menú]; en el nivel 8 se omite "Siguiente". |
+| M5 | Formato del HUD | Tiempo en `mm:ss` (ej. `01:23`) + gemas `X/Y` (ej. `3/5`) + icono del modo (1P/2P). Sin estrellas en el HUD (no spoilear el objetivo de tiempo). |
+| M2 | Efectos de sonido faltantes | Se mantienen **solo los 5 efectos** del documento (salto, gema, botón, muerte, victoria). Compuerta, palanca, cristal, barrera y puerta **no se sonorizan**. |
+
 ### Pendientes — resolver antes del hito indicado
-
-**Hito 5 — Pantallas y progreso:**
-
-| # | Ambigüedad |
-| --- | --- |
-| C2 | Si existe puntaje numérico o solo gemas + estrellas (se usará "gemas", no "puntaje"). |
-| M3 | Menú: si "Jugar" es un tercer botón o solo [Un jugador, Dos jugadores]. |
-| M4 | Botones de la pausa y de la pantalla de resultado. |
-| M5 | Formato del HUD (gemas 3/5, tiempo mm:ss). |
-| M2 | Sonido: si faltan efectos (compuerta, palanca, cristal, barrera, puerta) o se omiten a propósito. |
 
 **Hito 6 — Pulido (pueden quedar como convención del agente):**
 
