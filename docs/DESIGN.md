@@ -74,15 +74,21 @@ Modo un jugador (Tab): el personaje inactivo **queda quieto** (se le pone la vel
 | Abismo | Hueco sin piso; mata a ambos |
 | Puerta de Lumo / de Umbra | Se ilumina cuando su personaje está encima; el nivel se gana con ambos en su puerta |
 | Botón | Activo mientras algún personaje lo pisa; abre las compuertas de su mismo color/ID |
-| Palanca | Se alterna al tocarla; abre o cierra compuertas de forma permanente |
-| Compuerta | Bloque sólido que se desliza al abrirse (tween de 200 ms) |
-| Cristal oscuro | Sólido para ambos; Lumo lo disuelve al tocarlo (desaparece en 300 ms) |
-| Barrera de luz | Sólida para ambos; Umbra la apaga al tocarla (desaparece en 300 ms) |
+| Palanca | Se alterna por borde de contacto (ver abajo); cualquiera de los dos puede usarla; abre o cierra compuertas de forma permanente hasta volver a alternarse |
+| Compuerta | Bloque sólido que se desliza **hacia arriba** al abrirse (tween de 200 ms); nunca mata y detiene el cierre si un personaje ocupa el tile destino (ver abajo) |
+| Cristal oscuro | Sólido para ambos; Lumo lo disuelve al tocarlo: pierde solidez al instante y la animación de desaparición dura 300 ms |
+| Barrera de luz | Sólida para ambos; Umbra la apaga al tocarla: pierde solidez al instante y la animación de desaparición dura 300 ms |
 | Gema dorada / violeta | Solo la recoge su personaje; suma al puntaje |
 
 El cristal oscuro y la barrera de luz son simétricos a propósito: cada personaje puede abrirle camino al otro, lo que refuerza la cooperación con un solo tipo de lógica (un bloque que se elimina al contacto del personaje correcto).
 
 Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que un personaje está **encima** de la puerta, o **pisando** el botón, cuando la **cara inferior del personaje está en contacto con la cara superior del elemento** (colisión de suelo clásica de plataformas, la que produce Arcade Physics con los colliders). Rozar el lateral del elemento no cuenta.
+
+**Compuertas:** bloque sólido mientras existe (no se atraviesan a medio abrir/cerrar). Abren deslizándose **hacia arriba**: se retraen en el tile superior y su hueco queda libre apenas comienza la apertura; requieren un tile libre arriba, que `validate-levels` verifica. Al cerrarse, si un personaje ocupa el tile destino, la compuerta **detiene el cierre** (se queda en su posición o se reabre) hasta que el tile quede libre: **nunca aplasta ni mata**. Criterio de "injusto" del checklist del Hito 4: una compuerta es injusta si (a) mata o aplasta a un personaje, o (b) deja a un personaje atrapado en un compartimento sin ningún switch o palanca alcanzable para reabrirlo.
+
+**Palancas:** cualquiera de los dos personajes puede accionarlas. Alternan **por borde de contacto**: al entrar en contacto con un personaje alternan una sola vez, y no vuelven a alternar mientras se mantenga el contacto; hay que salir y volver a entrar para alternar de nuevo. El estado es **permanente** en el sentido de que dura hasta que se vuelve a alternar la palanca (o hasta el reinicio del nivel, ver *Victoria, derrota y puntaje*).
+
+**Cristal oscuro y barrera de luz:** al tocarlos el personaje correcto, **pierden la solidez en el mismo instante** (ya se puede pasar); los 300 ms son solo la animación de disolución.
 
 ### Victoria, derrota y puntaje
 
@@ -140,11 +146,11 @@ Cada `levels/NN.json` tiene esta estructura:
 | `d` | Gema dorada (la recoge Lumo) |
 | `v` | Gema violeta (la recoge Umbra) |
 
-- **`entities`** (array): botones, palancas y compuertas, que necesitan **ID** para vincularse entre sí. Cada entidad tiene `type` (`button` \| `lever` \| `gate`), `id` (string compartido entre los elementos que se controlan entre sí) y `x` / `y` (columna y fila en la grilla, 0-based). El detalle de la dirección del deslizamiento de las compuertas se define en el Hito 4.
+- **`entities`** (array): botones, palancas y compuertas, que necesitan **ID** para vincularse entre sí. Cada entidad tiene `type` (`button` \| `lever` \| `gate`), `id` (string compartido entre los elementos que se controlan entre sí) y `x` / `y` (columna y fila en la grilla, 0-based). Las compuertas se deslizan hacia arriba al abrirse (ver *Mecánicas > Elementos del nivel*).
 
 Asignación de gemas: **dorada (`d`) = Lumo**, **violeta (`v`) = Umbra**. Un personaje que toca la gema del otro simplemente la ignora (no la recoge, no hay penalización).
 
-`validate-levels` valida los archivos `NN.json` (01–08): nombre, `timeTarget`, grilla 17×30, alfabeto permitido, exactamente un `L` y un `U`, exactamente una `l` y una `u`, y coherencia de `entities` (tipos válidos, IDs no vacíos, coordenadas dentro de la grilla). El archivo `levels/test.json` del Hito 2 es un nivel de prueba **fuera de la progresión**: el validador lo ignora (no exige el patrón `NN.json` ni lo cuenta).
+`validate-levels` valida los archivos `NN.json` (01–08): nombre, `timeTarget`, grilla 17×30, alfabeto permitido, exactamente un `L` y un `U`, exactamente una `l` y una `u`, coherencia de `entities` (tipos válidos, IDs no vacíos, coordenadas dentro de la grilla) y que cada compuerta tenga un tile libre arriba para deslizarse. El archivo `levels/test.json` del Hito 2 es un nivel de prueba **fuera de la progresión**: el validador lo ignora (no exige el patrón `NN.json` ni lo cuenta).
 
 ### Progresión de los 8 niveles
 
@@ -154,7 +160,7 @@ Asignación de gemas: **dorada (`d`) = Lumo**, **violeta (`v`) = Umbra**. Un per
 4. **Mantenelo apretado:** un botón que uno pisa para abrirle paso al otro.
 5. **Ida y vuelta:** botones cruzados; se turnan para avanzar.
 6. **Disolver y apagar:** cristales oscuros y barreras de luz.
-7. **Palancas:** cambios permanentes y orden de acciones.
+7. **Palancas:** cambios permanentes y orden de acciones. Las palancas son reversibles (se pueden re-alternar): el orden incorrecto agrega pasos o cambia el camino, pero **nunca** deja el nivel sin resolver (sin deadlock).
 8. **Las ruinas:** combina todo; nivel más largo.
 
 Los niveles los propone el agente, pero cada uno tiene que pasar la prueba jugando en modo un jugador antes de darlo por cerrado.
@@ -333,18 +339,18 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | B7 | Alcance del reseteo (R y por muerte) | Reset total del nivel (spawns, cronómetro, gemas, botones, palancas, compuertas, cristales, barreras); se mantiene el modo de control. |
 | — | Letras del alfabeto | Confirmadas: `a` = abismo, `p` = pozo de luz, `s` = pozo de sombra. |
 
+### Resueltas — bloque del Hito 4
+
+| # | Ambigüedad | Decisión |
+| --- | --- | --- |
+| A5 | Compuertas | Bloque sólido mientras existe (con colisión durante el tween de 200 ms). Abren **hacia arriba** (se retraen 1 tile; require un tile libre arriba que `validate-levels` verifica). Nunca matan: al cerrarse, si un personaje ocupa el tile destino, **detienen el cierre** hasta que quede libre. |
+| A7 | Palanca | Cualquiera de los dos puede usarla. Alterna **por borde de contacto** (una vez al entrar en contacto; no vuelve a alternar hasta salir y volver a entrar). Estado permanente hasta re-alternar o reiniciar el nivel. |
+| A8 | Cristal oscuro / barrera de luz | Pierden la solidez **al instante** del contacto con el personaje correcto; los 300 ms son solo la animación de disolución. |
+| B9 | Compuerta "injusta" (checklist Hito 4) | Injusta si (a) mata o aplasta a un personaje, o (b) deja a un personaje atrapado en un compartimento sin ningún switch/palanca alcanzable para reabrirlo. |
+| B10 | Nivel 7: orden de acciones | Palancas reversibles (se pueden re-alternar): el orden incorrecto agrega pasos pero **nunca** deja el nivel sin resolver. |
+| C3 | Reset de switches | Confirmado por B7: botones, palancas, compuertas, cristales, barreras y gemas se restauran con R y por muerte. |
+
 ### Pendientes — resolver antes del hito indicado
-
-**Hito 4 — Botones y elementos:**
-
-| # | Ambigüedad |
-| --- | --- |
-| A5 | Compuertas: ¿matan al cerrarse sobre alguien?, dirección del deslizamiento, solidez durante el tween de 200 ms. |
-| A7 | Palanca: detección de alterno (borde de contacto vs. solape) y quién puede usarla. |
-| A8 | Cristal oscuro / barrera de luz: ¿siguen sólidos durante sus 300 ms de desaparición? |
-| B9 | Qué cuenta como compuerta que "aplasta o atrapa de forma injusta" (checklist del Hito 4). |
-| B10 | Nivel 7: qué pasa si el jugador realiza las acciones en el orden incorrecto. |
-| C3 | Confirmar que R y la muerte resetean botones, palancas, compuertas, cristales, barreras y gemas. |
 
 **Hito 5 — Pantallas y progreso:**
 

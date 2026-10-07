@@ -74,3 +74,16 @@ Cuestionario del bloque Hito 3 resuelto con el usuario e **integrado en `docs/DE
 - Alfabeto confirmado: `a` abismo, `p` pozo de luz, `s` pozo de sombra.
 
 Pendientes: bloques de los Hitos 4, 5 y 6 (compuertas, palancas, pantallas, pulido) — listados en `DESIGN.md → Decisiones de diseño`.
+
+### Aclaraciones de diseño — bloque Hito 4 (post-commit `8ab2368`)
+
+Cuestionario del bloque Hito 4 resuelto con el usuario e **integrado en `docs/DESIGN.md`**:
+
+- **A5** Compuertas: sólidas durante el tween; abren **hacia arriba** (requieren tile libre arriba, validado); nunca matan — detienen el cierre si un personaje ocupa el tile destino.
+- **A7** Palanca: cualquiera de los dos; alterna **por borde de contacto** (una vez al entrar; hay que salir y volver); estado permanente hasta re-alternar o reiniciar.
+- **A8** Cristal oscuro / barrera de luz: pierden solidez **al instante** del contacto; los 300 ms son solo animación.
+- **B9** Compuerta "injusta": si mata/aplasta o deja atrapado sin switch/palanca alcanzable para reabrir.
+- **B10** Nivel 7: palancas reversibles — el orden incorrecto agrega pasos pero nunca bloquea la resolución.
+- **C3** Reset de switches: confirmado por B7 (se retiró del listado de pendientes).
+
+Pendientes: bloques de los Hitos 5 y 6 (pantallas y progreso; pulido) — listados en `DESIGN.md → Decisiones de diseño`.
