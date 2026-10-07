@@ -1,4 +1,4 @@
-import { GRID_COLS, GRID_ROWS } from '../config/game.ts';
+import { GRID_COLS, GRID_ROWS, TILE_SIZE } from '../config/game.ts';
 
 export const VALID_TILES = new Set(['.', '#', 'L', 'U', 'l', 'u', 'p', 's', 'a', 'c', 'b', 'd', 'v']);
 
@@ -17,6 +17,47 @@ export interface LevelData {
   timeTarget: number;
   grid: string[];
   entities: LevelEntity[];
+}
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+export interface SpawnPoints {
+  lumo: Point;
+  umbra: Point;
+}
+
+export interface DoorPoints {
+  lumo: Point;
+  umbra: Point;
+}
+
+export interface GemPoints {
+  gold: Point[]; // d
+  violet: Point[]; // v
+}
+
+export interface HazardPoints {
+  abism: Point[]; // a
+  lightPit: Point[]; // p
+  shadowPit: Point[]; // s
+}
+
+export interface StaticTile {
+  tx: number;
+  ty: number;
+}
+
+export interface ParsedLevel extends LevelData {
+  spawns: SpawnPoints;
+  doors: DoorPoints;
+  gems: GemPoints;
+  hazards: HazardPoints;
+  staticTiles: StaticTile[]; // #, p, s
+  crystals: Point[]; // c
+  barriers: Point[]; // b
 }
 
 export function isValidLevelName(fileName: string): boolean {
@@ -134,4 +175,90 @@ export function validateLevel(raw: string): string[] {
   });
 
   return errors;
+}
+
+function tileToWorld(tx: number, ty: number): Point {
+  return {
+    x: tx * TILE_SIZE + TILE_SIZE / 2,
+    y: ty * TILE_SIZE + TILE_SIZE / 2,
+  };
+}
+
+export function parseLevel(raw: string): ParsedLevel {
+  const errors = validateLevel(raw);
+  if (errors.length > 0) {
+    throw new Error(`Nivel inválido: ${errors.join(', ')}`);
+  }
+
+  const data = JSON.parse(raw) as LevelData;
+  const grid = data.grid;
+
+  const spawns: SpawnPoints = {
+    lumo: { x: 0, y: 0 },
+    umbra: { x: 0, y: 0 },
+  };
+  const doors: DoorPoints = {
+    lumo: { x: 0, y: 0 },
+    umbra: { x: 0, y: 0 },
+  };
+  const gems: GemPoints = {
+    gold: [],
+    violet: [],
+  };
+  const hazards: HazardPoints = {
+    abism: [],
+    lightPit: [],
+    shadowPit: [],
+  };
+  const staticTiles: StaticTile[] = [];
+  const crystals: Point[] = [];
+  const barriers: Point[] = [];
+
+  for (let ty = 0; ty < grid.length; ty++) {
+    const row = grid[ty];
+    if (typeof row !== 'string') continue;
+    for (let tx = 0; tx < row.length; tx++) {
+      const ch = row[tx];
+      if (ch === 'L') {
+        spawns.lumo = tileToWorld(tx, ty);
+      } else if (ch === 'U') {
+        spawns.umbra = tileToWorld(tx, ty);
+      } else if (ch === 'l') {
+        doors.lumo = tileToWorld(tx, ty);
+      } else if (ch === 'u') {
+        doors.umbra = tileToWorld(tx, ty);
+      } else if (ch === 'd') {
+        gems.gold.push(tileToWorld(tx, ty));
+      } else if (ch === 'v') {
+        gems.violet.push(tileToWorld(tx, ty));
+      } else if (ch === 'a') {
+        hazards.abism.push(tileToWorld(tx, ty));
+      } else if (ch === 'p') {
+        hazards.lightPit.push(tileToWorld(tx, ty));
+        staticTiles.push({ tx, ty });
+      } else if (ch === 's') {
+        hazards.shadowPit.push(tileToWorld(tx, ty));
+        staticTiles.push({ tx, ty });
+      } else if (ch === '#') {
+        staticTiles.push({ tx, ty });
+      } else if (ch === 'c') {
+        crystals.push(tileToWorld(tx, ty));
+      } else if (ch === 'b') {
+        barriers.push(tileToWorld(tx, ty));
+      }
+    }
+  }
+
+  return {
+    timeTarget: data.timeTarget,
+    grid: data.grid,
+    entities: data.entities,
+    spawns,
+    doors,
+    gems,
+    hazards,
+    staticTiles,
+    crystals,
+    barriers,
+  };
 }
