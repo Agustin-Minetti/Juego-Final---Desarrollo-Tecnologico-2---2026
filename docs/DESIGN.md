@@ -41,7 +41,9 @@ El núcleo son dos personajes con física de plataformas, tres tipos de pozo, pu
 | Lumo | Luz (amarillo cálido) | A / D mover, W saltar | Pozos de sombra y abismo |
 | Umbra | Sombra (violeta) | ← / → mover, ↑ saltar | Pozos de luz y abismo |
 
-Teclas globales: R reinicia el nivel al instante, Esc pausa, Tab cambia de personaje en modo un jugador.
+Teclas globales: R reinicia el nivel al instante (reset total, ver *Victoria, derrota y puntaje*), Esc pausa, Tab cambia de personaje en modo un jugador.
+
+Pausa (Esc): **congela todo** — física, cronómetro y animaciones. Mientras está activa solo se permite reanudar (Esc), reiniciar (R) o silenciar; Tab y las teclas de movimiento quedan deshabilitadas. El cronómetro de las estrellas nunca avanza pausado.
 
 Parámetros de movimiento iniciales:
 
@@ -67,9 +69,9 @@ Modo un jugador (Tab): el personaje inactivo **queda quieto** (se le pone la vel
 | Elemento | Comportamiento |
 | --- | --- |
 | Pared / piso | Sólido para ambos |
-| Pozo de luz | Disuelve a Umbra; Lumo lo atraviesa |
-| Pozo de sombra | Apaga a Lumo; Umbra lo atraviesa |
-| Abismo | Mata a ambos |
+| Pozo de luz | Sólido para ambos (actúa como piso); disuelve a Umbra al tocarlo; Lumo lo cruza sin efecto |
+| Pozo de sombra | Sólido para ambos (actúa como piso); apaga a Lumo al tocarlo; Umbra lo cruza sin efecto |
+| Abismo | Hueco sin piso; mata a ambos |
 | Puerta de Lumo / de Umbra | Se ilumina cuando su personaje está encima; el nivel se gana con ambos en su puerta |
 | Botón | Activo mientras algún personaje lo pisa; abre las compuertas de su mismo color/ID |
 | Palanca | Se alterna al tocarla; abre o cierra compuertas de forma permanente |
@@ -85,6 +87,8 @@ Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que
 ### Victoria, derrota y puntaje
 
 - Si un personaje muere, partículas de muerte durante 0,5 s y reinicio automático del nivel.
+- Prioridad de muerte: si en un mismo frame un personaje muere y el otro cumple la condición de victoria, **gana la muerte** y se reinicia el nivel. La victoria solo se evalúa si ambos personajes están vivos al final del frame.
+- Reseteo (R y por muerte): **reset total del nivel** — spawns de ambos, cronómetro a 0, gemas sin recoger, botones sin pisar, palancas en su estado inicial, compuertas cerradas, cristales y barreras restaurados. Se mantiene el modo de control (1PJ/2PJ) y el progreso desbloqueado.
 - Al ganar: pantalla de resultado con tiempo, gemas y estrellas.
 - Estrellas: 1 por terminar, 1 por recoger todas las gemas, 1 por terminar bajo el tiempo objetivo del nivel.
 - Progreso (niveles desbloqueados y mejores estrellas) guardado en localStorage.
@@ -319,17 +323,17 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | — | Asignación de gemas | Dorada (`d`) = Lumo; violeta (`v`) = Umbra. El personaje equivocado la ignora. |
 | — | `levels/test.json` | Nivel de prueba del Hito 2, fuera de la progresión; `validate-levels` lo ignora. |
 
+### Resueltas — bloque del Hito 3
+
+| # | Ambigüedad | Decisión |
+| --- | --- | --- |
+| A6 | Pozo para el personaje que no muere | El pozo es **sólido para ambos** (actúa como piso): el personaje vulnerable muere por contacto y el otro lo cruza sin efecto. "Atraviesa" = pasa por encima sin morir. El abismo es un hueco sin piso. |
+| B1 | Efecto de la pausa (Esc) | Congela todo (física, cronómetro, animaciones); en pausa solo reanudar (Esc), reiniciar (R) o silenciar; Tab deshabilitado. |
+| B2 | Muerte y victoria en el mismo frame | Gana la muerte: se reinicia el nivel. La victoria requiere ambos personajes vivos al final del frame. |
+| B7 | Alcance del reseteo (R y por muerte) | Reset total del nivel (spawns, cronómetro, gemas, botones, palancas, compuertas, cristales, barreras); se mantiene el modo de control. |
+| — | Letras del alfabeto | Confirmadas: `a` = abismo, `p` = pozo de luz, `s` = pozo de sombra. |
+
 ### Pendientes — resolver antes del hito indicado
-
-**Hito 3 — Peligros y puertas:**
-
-| # | Ambigüedad |
-| --- | --- |
-| A6 | Comportamiento geométrico del pozo para el personaje que no muere ("atraviesa"): ¿cae por un hueco sin colisión? ¿hay piso debajo? |
-| B1 | Efecto de la pausa (Esc) sobre el cronómetro, la física y las teclas. |
-| B2 | Resolución cuando muerte y victoria ocurren en el mismo frame. |
-| B7 | Alcance exacto del reseteo con R y por muerte (se asume: todo el estado del nivel). |
-| — | Confirmar la letra del abismo (`a`) y de pozos (`p`/`s`) con los primeros niveles. |
 
 **Hito 4 — Botones y elementos:**
 

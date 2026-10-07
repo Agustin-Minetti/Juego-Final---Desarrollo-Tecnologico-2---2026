@@ -62,3 +62,15 @@ Análisis de ambigüedades del documento de diseño (`.docx` + `DESIGN.md`) y cu
 - Nueva sección `DESIGN.md` → *Decisiones de diseño*: registro de lo resueltí y del pendiente por hito (3 a 6).
 
 Verificación: solo documentación; no se tocó código ni tests. Pendiente humano: revisar el `DESIGN.md` actualizado. Pendiente del agente: cuestionario de los bloques Hito 3+ (aún sin resolver: pozos, pausa, compuertas, palancas, pantallas, etc.).
+
+### Aclaraciones de diseño — bloque Hito 3 (post-commit `4d907af`)
+
+Cuestionario del bloque Hito 3 resuelto con el usuario e **integrado en `docs/DESIGN.md`**:
+
+- **A6** Pozos: sólidos para ambos (actúan como piso); solo el personaje vulnerable muere por contacto; el otro lo cruza sin efecto. Abismo = hueco sin piso.
+- **B1** Pausa (Esc): congela todo (física, cronómetro, animaciones); en pausa solo reanudar/reiniciar/silenciar; Tab deshabilitado.
+- **B2** Muerte vs. victoria en el mismo frame: gana la muerte; la victoria requiere ambos vivos al final del frame.
+- **B7** Reset (R y por muerte): total (spawns, cronómetro, gemas, switches, compuertas, cristales, barreras); mantiene modo de control.
+- Alfabeto confirmado: `a` abismo, `p` pozo de luz, `s` pozo de sombra.
+
+Pendientes: bloques de los Hitos 4, 5 y 6 (compuertas, palancas, pantallas, pulido) — listados en `DESIGN.md → Decisiones de diseño`.
