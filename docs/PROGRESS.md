@@ -6,8 +6,8 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 
 | Hito | Estado | Notas |
 | --- | --- | --- |
-| 1. Esqueleto | en curso | Chequeo previo de infraestructura realizado |
-| 2. Movimiento | pendiente | |
+| 1. Esqueleto | completado | Mergeado en `main` (PR #2); pendiente solo el chequeo manual humano original |
+| 2. Movimiento | en curso | Paso 1 (`levelParser`) y Paso 2 (jugadores + `levels/test.json`) hechos en `feature/hito-2-movimiento` |
 | 3. Peligros y puertas | pendiente | |
 | 4. Botones y elementos | pendiente | |
 | 5. Pantallas y progreso | pendiente | |
@@ -113,3 +113,41 @@ Cuestionario del bloque Hito 6 resuelto con el usuario e **integrado en `docs/DE
 Con este bloque quedan **resueltas todas las ambigüedades de diseño** pendientes (Hitos 2–6) en `docs/DESIGN.md → Decisiones de diseño`.
 
 Nota Git: los bloques de los Hitos 4, 5 y 6 están **en working tree sin commitear** (pendiente de autorización).
+
+## Hito 2: Movimiento
+
+### Paso 1 — `levelParser` + tests (commit `428520a`, mergeado en `main` vía PR #3)
+
+- `src/logic/levelParser.ts`: `validateLevel` + `parseLevel` (grilla → spawns, puertas, gemas, hazards, tiles estáticos, cristales, barreras) con tests en `tests/parseLevel.test.ts`.
+
+### Paso 2 — Jugadores jugables + `levels/test.json` (rama `feature/hito-2-movimiento`)
+
+Hecho:
+
+- `src/config/physics.ts`: nueva constante `JUMP_CUT_FACTOR = 0.5` (salto variable) con aserción en `tests/config.test.ts`.
+- `src/config/textures.ts` (nuevo): claves de textura compartidas (`wall`, `lumo`, `umbra`).
+- `src/scenes/BootScene.ts`: mockups por código (`Graphics + generateTexture`) — tile de pared 32×32, Lumo (círculo amarillo + halo) y Umbra (figura violeta con contorno), colores de `config/colors.ts`.
+- `src/main.ts`: gravedad del mundo a `GRAVITY` (1200 px/s²).
+- `src/logic/movement.ts` (nuevo, sin Phaser): lógica pura del salto (`createJumpState` + `updateJump`) con coyote time (100 ms), jump buffer (100 ms) y corte de salto variable (una vez por salto); tests en `tests/movement.test.ts` (10 tests).
+- `src/objects/Player.ts` (nuevo): extiende `Phaser.Physics.Arcade.Sprite`; hitbox 24×40 centrada, `collideWorldBounds`, arrastre 2400 px/s² y `maxVelocity.x = 200` (aceleración/desaceleración del GDD vía Arcade), salto -480 con corte ×0.5; input por teclas propias (A/D/W y ←/→/↑).
+- `levels/test.json`: nivel de prueba válido (fuera de la progresión) con suelo, plataformas a 3 alturas distintas, spawns, puertas y `timeTarget: 60`.
+- `src/scenes/GameScene.ts`: carga `test.json` con import `?raw`, `parseLevel`, `staticGroup` de paredes, marcadores visuales de puertas (sin lógica), crea los dos `Player` y sus colliders (**sin** colisión entre personajes, decisión B3), `update()` por frame.
+- `tests/testLevel.test.ts`: `levels/test.json` parsea y tiene plataformas a distintas alturas.
+
+Bug detectado y corregido por los tests: el estado inicial de `bufferUntil` era `0` y con `now <= bufferUntil` el frame `now = 0` disparaba un salto espurio; ahora usa `Number.NEGATIVE_INFINITY`.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run typecheck` | en verde |
+| `npm test` | 35/35 tests en verde (5 archivos) |
+| `npm run validate-levels` | en verde (sin niveles NN.json aún) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+| `npm run dev` | OK: responde 200, `GameScene.ts` transformado sin errores |
+
+Pendiente humano:
+
+- [ ] Jugar con `npm run dev`: moverse ambos a la vez sin conflicto, salto tras salir de un borde (coyote), salto bajo al soltar W/↑ pronto, llegar a las puertas usando las plataformas.
+
+Paso 3 del Hito 2 (sin empezar): modo un jugador con Tab (inactivo quieto con física activa) y modo debug (`?debug=1`).
