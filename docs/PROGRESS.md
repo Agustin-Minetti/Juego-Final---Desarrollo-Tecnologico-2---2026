@@ -98,6 +98,18 @@ Cuestionario del bloque Hito 5 resuelto con el usuario e **integrado en `docs/DE
 - **M5** HUD: tiempo `mm:ss` + gemas `X/Y` + icono 1P/2P; sin estrellas en el HUD (no spoilear el objetivo de tiempo).
 - **M2** Se mantienen **solo los 5 efectos** de sonido (salto, gema, botón, muerte, victoria); compuerta, palanca, cristal, barrera y puerta no se sonorizan.
 
-Pendientes: bloque del Hito 6 (pulido: M6–M11 y C1) — listado en `DESIGN.md → Decisiones de diseño`.
+### Aclaraciones de diseño — bloque Hito 6 (en working tree, sin commitear)
 
-Nota Git: los bloques de los Hitos 4 y 5 están **en working tree sin commitear** (pendiente de autorización).
+Cuestionario del bloque Hito 6 resuelto con el usuario e **integrado en `docs/DESIGN.md`**:
+
+- **M6** Objetos: `src/objects/` = { Player, Door, Gate, Button, Lever, Gem, Crystal, Barrier, Hazard }.
+- **M7** Paredes/pisos/pozos sólidos: **staticGroup** de Arcade generado desde `levelParser`; sin tilemap.
+- **M8** Pausa = **overlay dentro de GameScene** (no existe escena Pause); `BootScene` genera las texturas con `Graphics + generateTexture`.
+- **M9** `validate-levels`: se implementa el alcance completo del documento (nombre `NN.json` ignorando `test.json`, `timeTarget` > 0, grilla 17×30, alfabeto, cuentas de `L`/`U`/`l`/`u`, `entities` válidas y tile libre arriba en cada compuerta).
+- **M10** Criterio de los 8 niveles: completables en **modo un jugador**; la estrella de tiempo se verifica por **cálculo de rutas**.
+- **M11** Versiones fijas sin `^`: `typescript 7.0.2`, `vite 8.3.3`, `vitest 5.0.3`, `@types/node 24.19.1` (Phaser 4.2.1 ya fija).
+- **C1** Duración: se mantiene "7 a 10 días" y el plan estima "8 días hábiles" dentro de ese rango.
+
+Con este bloque quedan **resueltas todas las ambigüedades de diseño** pendientes (Hitos 2–6) en `docs/DESIGN.md → Decisiones de diseño`.
+
+Nota Git: los bloques de los Hitos 4, 5 y 6 están **en working tree sin commitear** (pendiente de autorización).

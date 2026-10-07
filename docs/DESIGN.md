@@ -4,7 +4,7 @@
 
 ## Resumen
 
-Lumo y Umbra es un plataformero cooperativo de puzzles para dos jugadores en el mismo teclado, con 8 niveles y una duración de desarrollo objetivo de 7 a 10 días. Lumo es un espíritu de luz que se apaga en la sombra; Umbra es un espíritu de sombra que se disuelve en la luz. Los dos tienen que llegar a sus puertas para ganar.
+Lumo y Umbra es un plataformero cooperativo de puzzles para dos jugadores en el mismo teclado, con 8 niveles y una duración de desarrollo objetivo de 7 a 10 días (el Plan por hitos estima 8 días hábiles dentro de ese rango). Lumo es un espíritu de luz que se apaga en la sombra; Umbra es un espíritu de sombra que se disuelve en la luz. Los dos tienen que llegar a sus puertas para ganar.
 
 Pitch: "Una luz y una sombra escapan juntas de unas ruinas al atardecer, donde lo que salva a una puede borrar a la otra."
 
@@ -231,15 +231,21 @@ lumo-y-umbra/
 │   │   ├── switches.ts      botones, palancas, compuertas
 │   │   ├── scoring.ts       estrellas y tiempos
 │   │   └── progress.ts      guardado (recibe un storage inyectable)
-│   ├── scenes/             Boot, Menu, LevelSelect, Game, Pause, Result
-│   ├── objects/            Player, Door, Gate, Button, Hazard
+│   ├── scenes/             Boot, Menu, LevelSelect, Game, Result (la pausa es un overlay de GameScene)
+│   ├── objects/            Player, Door, Gate, Button, Lever, Gem, Crystal, Barrier, Hazard
 │   └── fx/                 partículas, shake, transiciones
 ├── tests/                  *.test.ts de src/logic
 ```
 
+Notas de arquitectura:
+
+- **Paredes, pisos y pozos sólidos:** grupo estático de Arcade (`staticGroup`) generado desde `levelParser` a partir de la grilla (sin tilemap).
+- **Pausa:** overlay dentro de `GameScene` (rectángulo oscuro + botones); congela todo con `physics.pause()` y deteniendo cronómetro y tweens. No existe una escena `Pause`.
+- **Carga de texturas:** `BootScene` genera todo el arte por código (`Graphics + generateTexture`) antes de arrancar `Game`.
+
 Scripts de package.json: `dev`, `build`, `preview`, `test`, `validate-levels`, `typecheck` (`tsc --noEmit`). El agente debe correr `typecheck`, `test` y `validate-levels` antes de dar un hito por terminado.
 
-Escena de juego: carga el JSON, lo pasa por `levelParser`, crea un tilemap o grupo estático de Arcade para paredes, y grupos para pozos, compuertas y gemas. Las colisiones y solapamientos llaman a funciones de `rules.ts` para decidir el resultado.
+Escena de juego: carga el JSON, lo pasa por `levelParser`, crea un grupo estático de Arcade con las paredes y los pozos sólidos, y grupos para compuertas y gemas. Las colisiones y solapamientos llaman a funciones de `rules.ts` para decidir el resultado.
 
 Modo debug: `?debug=1` en la URL activa el debug de Arcade Physics y permite saltar de nivel con las teclas 1-8.
 
@@ -312,7 +318,7 @@ Prompt: "Agregá las escenas Menu, LevelSelect, Pause y Result, el HUD, scoring.
 Prompt: "Implementá el juice en el orden de la sección Estética, los efectos de sonido y el nivel 8. Revisá que no queden console.log ni código muerto y que npm run build funcione."
 
 - [ ] El build corre con `npm run preview` sin errores en consola.
-- [ ] Los 8 niveles completables con 3 estrellas.
+- [ ] Los 8 niveles completables en modo un jugador; la estrella de tiempo se verifica por cálculo de rutas (existe una ruta que recoge todas las gemas bajo el objetivo).
 
 Si el agente se traba: pedirle que relea la skill de Phaser del subsistema afectado en `docs/phaser-skills/`, que agregue un test que reproduzca el problema si es lógica, o que active `?debug=1` y describa lo que pasa si es física.
 
@@ -367,16 +373,14 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | M5 | Formato del HUD | Tiempo en `mm:ss` (ej. `01:23`) + gemas `X/Y` (ej. `3/5`) + icono del modo (1P/2P). Sin estrellas en el HUD (no spoilear el objetivo de tiempo). |
 | M2 | Efectos de sonido faltantes | Se mantienen **solo los 5 efectos** del documento (salto, gema, botón, muerte, victoria). Compuerta, palanca, cristal, barrera y puerta **no se sonorizan**. |
 
-### Pendientes — resolver antes del hito indicado
+### Resueltas — bloque del Hito 6
 
-**Hito 6 — Pulido (pueden quedar como convención del agente):**
-
-| # | Ambigüedad |
-| --- | --- |
-| M6 | `objects/`: dónde viven palanca, cristal, barrera y gema respecto a la lista actual. |
-| M7 | Tilemap vs. grupo estático de Arcade para las paredes. |
-| M8 | Pause como escena separada u overlay; si Boot es la escena de carga de `generateTexture`. |
-| M9 | Alcance final de `validate-levels` una vez cerrado el formato del JSON. |
-| M10 | Criterio de "los 8 niveles completables con 3 estrellas" (por el agente en modo un jugador vs. por un jugador razon). |
-| M11 | Fijar versiones de Vite, TypeScript y Vitest en `package.json` (solo Phaser está fija hoy). |
-| C1 | Unificar "7 a 10 días" (*Resumen*) vs. "unos 8 días hábiles" (*Plan por hitos*). |
+| # | Ambigüedad | Decisión |
+| --- | --- | --- |
+| M6 | Objetos del nivel | `src/objects/` = { Player, Door, Gate, Button, Lever, Gem, Crystal, Barrier, Hazard }. Cada objeto con su lógica y su visual; Crystal y Barrier comparten una base mínima de bloque que se disuelve al contacto con el personaje correcto. |
+| M7 | Paredes/pisos/pozos sólidos | **staticGroup** de Arcade generado desde `levelParser` a partir de la grilla; sin tilemap. |
+| M8 | Pausa y carga de texturas | Pausa = **overlay dentro de `GameScene`** (`physics.pause()` + cronómetro y tweens detenidos); no existe escena Pause. `BootScene` genera el arte por código (`Graphics + generateTexture`) antes de arrancar Game. |
+| M9 | Alcance de `validate-levels` | Confirmado el alcance completo documentado: nombre `NN.json` (ignora `test.json` y no-NN), `timeTarget` número > 0, grilla 17×30, alfabeto permitido, exactamente un `L`/`U`/`l`/`u`, `entities` válidas (type `button\|lever\|gate`, id no vacío, x/y dentro de la grilla) y tile libre arriba en cada compuerta. |
+| M10 | Criterio de los 8 niveles | Completabilidad probada en **modo un jugador**; la estrella de tiempo se verifica por **cálculo de rutas** (no hace falta que el agente baje el cronómetro jugando). |
+| M11 | Versiones en `package.json` | Se fijan **sin `^`**: `typescript 7.0.2`, `vite 8.3.3`, `vitest 5.0.3`, `@types/node 24.19.1` (Phaser ya estaba en 4.2.1). |
+| C1 | Duraciones (*Resumen* vs. *Plan*) | Se mantiene "7 a 10 días" y se aclara que el plan estima "8 días hábiles" dentro de ese rango. |
