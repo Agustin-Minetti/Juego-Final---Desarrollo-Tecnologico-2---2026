@@ -4,3 +4,4 @@ export const GRAVITY = 1200;
 export const JUMP_VELOCITY = -480;
 export const COYOTE_TIME_MS = 100;
 export const JUMP_BUFFER_MS = 100;
+export const JUMP_CUT_FACTOR = 0.5;

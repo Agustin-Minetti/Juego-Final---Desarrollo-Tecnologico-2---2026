@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
 import { GAME_WIDTH, GAME_HEIGHT } from './config/game';
+import { GRAVITY } from './config/physics';
 
 new Phaser.Game({
   type: Phaser.AUTO,
@@ -16,7 +17,7 @@ new Phaser.Game({
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { x: 0, y: 0 },
+      gravity: { x: 0, y: GRAVITY },
       debug: false,
     },
   },
