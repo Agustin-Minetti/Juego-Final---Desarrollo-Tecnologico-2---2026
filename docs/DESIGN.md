@@ -43,6 +43,8 @@ El núcleo son dos personajes con física de plataformas, tres tipos de pozo, pu
 
 Teclas globales: R reinicia el nivel al instante (reset total, ver *Victoria, derrota y puntaje*), Esc pausa, Tab cambia de personaje en modo un jugador.
 
+Teclas según el modo de control: en **dos jugadores** cada personaje usa las teclas de la tabla (Lumo A/D/W, Umbra flechas). En **un jugador** solo se usa el juego de teclas **A/D/W**, que maneja al personaje activo — sea Lumo o Umbra — y Tab alterna cuál de los dos está activo; las flechas quedan inactivas. Hasta que exista el selector de niveles con elección de modo (Hito 5), Tab cicla **2P → 1P(Lumo) → 1P(Umbra) → 2P** para poder probar los tres estados.
+
 Pausa (Esc): **congela todo** — física, cronómetro y animaciones. Mientras está activa solo se permite reanudar (Esc), reiniciar (R) o silenciar; Tab y las teclas de movimiento quedan deshabilitadas. El cronómetro de las estrellas nunca avanza pausado.
 
 Parámetros de movimiento iniciales:
@@ -102,7 +104,7 @@ Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que
 
 ### Modo un jugador
 
-Con Tab se alterna el control entre Lumo y Umbra; el personaje inactivo queda quieto (con física activa). Sirve para jugar solo y, sobre todo, para que el agente pruebe los niveles sin otra persona.
+Con Tab se alterna el control entre Lumo y Umbra: el activo se maneja con A/D/W (las flechas quedan inactivas) y el inactivo queda quieto (con física activa). En dos jugadores cada uno usa sus teclas. Sirve para jugar solo y, sobre todo, para que el agente pruebe los niveles sin otra persona.
 
 ## Niveles
 
@@ -338,6 +340,7 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | B5 | Criterio de "encima"/"pisar" | Contacto de la cara inferior del personaje con la cara superior del elemento. |
 | B3 | Colisión entre personajes | No colisionan entre sí; se ignoran en la física. |
 | B8 | Personaje inactivo (Tab) | Velocidad horizontal a 0, física activa: puede caer y morir sin control. |
+| — | Teclas en modo un jugador | En 1P el personaje **activo** (Lumo o Umbra) se maneja con **A/D/W** y las flechas quedan inactivas; Tab alterna quién está activo. En 2P cada uno con sus teclas. Hito 2 (sin menú): Tab cicla 2P → 1P(Lumo) → 1P(Umbra) → 2P. |
 | M1 | Colores cualitativos | Paleta hex confirmada (ver *Estética*); vive en `src/config/colors.ts`. |
 | — | Asignación de gemas | Dorada (`d`) = Lumo; violeta (`v`) = Umbra. El personaje equivocado la ignora. |
 | — | `levels/test.json` | Nivel de prueba del Hito 2, fuera de la progresión; `validate-levels` lo ignora. |
