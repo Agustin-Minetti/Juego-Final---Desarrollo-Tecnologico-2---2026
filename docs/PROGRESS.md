@@ -7,7 +7,7 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 | Hito | Estado | Notas |
 | --- | --- | --- |
 | 1. Esqueleto | completado | Mergeado en `main` (PR #2); pendiente solo el chequeo manual humano original |
-| 2. Movimiento | en curso | Paso 1 (`levelParser`) y Paso 2 (jugadores + `levels/test.json`) hechos en `feature/hito-2-movimiento` |
+| 2. Movimiento | en curso | Pasos 1-3 hechos en `feature/hito-2-movimiento` (`levelParser`, jugadores + `test.json`, Tab + debug); Hito 2 listo salvo prueba manual humana |
 | 3. Peligros y puertas | pendiente | |
 | 4. Botones y elementos | pendiente | |
 | 5. Pantallas y progreso | pendiente | |
@@ -150,4 +150,30 @@ Pendiente humano:
 
 - [ ] Jugar con `npm run dev`: moverse ambos a la vez sin conflicto, salto tras salir de un borde (coyote), salto bajo al soltar W/↑ pronto, llegar a las puertas usando las plataformas.
 
-Paso 3 del Hito 2 (sin empezar): modo un jugador con Tab (inactivo quieto con física activa) y modo debug (`?debug=1`).
+### Paso 3 — Modo un jugador (Tab) + modo debug (rama `feature/hito-2-movimiento`)
+
+Hecho:
+
+- `src/logic/controlMode.ts` (nuevo, sin Phaser): estado de control (`ControlState` = modo 2P/1PJ + personaje activo), `createControlState()` (arranca en **2P**), `nextControlState()` (Tab cicla **2P → 1P(Lumo) → 1P(Umbra) → 2P**) y `schemeFor()` (2P: Lumo con WASD y Umbra con flechas; 1P: el activo con **WASD**, el inactivo sin esquema → `null`); tests en `tests/controlMode.test.ts` (4 tests).
+- `src/objects/Player.ts`: `update(time, input: PlayerKeys | null)` — `input` es el juego de teclas a leer ese frame (resuelto por la escena); si es `null` (inactivo) pone aceleración y velocidad horizontal a 0 (**quieto** según *Personajes y controles*) y **no toca teclas ni `velocityY` ni deshabilita el body**: gravedad y colisiones siguen activas (puede caer al abismo sin control). Las teclas ya no se fijan en el constructor.
+- `src/scenes/GameScene.ts`: crea dos juegos de teclas compartidos (`wasd` = A/D/W, `arrows` = ←/→/↑) y cada frame resuelve con `schemeFor` qué teclas recibe cada `Player`; Tab con `JustDown(KEY_CODES.swapCharacter)` avanza el ciclo; en 1P limpia los bordes de la tecla de salto de flechas (evita saltos fantasma al volver a 2P); con `?debug=1` muestra un indicador `2P` / `1P Lumo` / `1P Umbra` (ayuda de dev; el HUD 1P/2P oficial es del Hito 5).
+- `src/config/debug.ts` (nuevo): `isDebugMode()` lee `?debug=1` de la URL (`try/catch` no aplica; solo lectura de `location.search`).
+- `src/main.ts`: `arcade.debug: isDebugMode()` — con `?debug=1` Arcade dibuja hitboxes y velocidades.
+- `docs/PROGRESS.md`: este apunte.
+
+Decisión de alcance (consultada y aprobada): las **teclas 1-8 para saltar de nivel** (modo debug documentado en *Arquitectura*) se **diferieren al Hito 3**, cuando existan `levels/01.json`…`08.json`; en este paso solo se activa el debug de Arcade Physics.
+
+Decisión de diseño (instrucción explícita del usuario, **integrada en `DESIGN.md`** con su aprobación): Tab **cicla 2P → 1P(Lumo) → 1P(Umbra) → 2P**; en **1P el personaje activo se maneja con A/D/W** —sea Lumo o Umbra— y las flechas quedan inactivas; en **2P cada uno con sus teclas** (Lumo A/D/W, Umbra flechas). Se actualizaron `DESIGN.md` → *Personajes y controles* (párrafos de teclas globales y de modo un jugador) y la tabla *Decisiones de diseño — bloque Hito 2*.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run typecheck` | en verde |
+| `npm test` | 40/40 tests en verde (6 archivos) |
+| `npm run validate-levels` | en verde (sin niveles NN.json aún) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+
+Pendiente humano:
+
+- [ ] Con `npm run dev`: verificar que ambos se mueven a la vez (2P), que Tab cicla 2P → 1P(Lumo) → 1P(Umbra) → 2P, que en 1P el activo se maneja con A/D/W —también cuando es Umbra— y las flechas no, que el inactivo queda quieto pero con física activa (dejarlo en el borde de una plataforma y comprobar que cae), y que `?debug=1` muestra el debug de Arcade + el indicador de modo.

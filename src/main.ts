@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
+import { isDebugMode } from './config/debug';
 import { GAME_WIDTH, GAME_HEIGHT } from './config/game';
 import { GRAVITY } from './config/physics';
 
@@ -18,7 +19,7 @@ new Phaser.Game({
     default: 'arcade',
     arcade: {
       gravity: { x: 0, y: GRAVITY },
-      debug: false,
+      debug: isDebugMode(),
     },
   },
   scene: [BootScene, GameScene],

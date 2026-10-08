@@ -9,10 +9,9 @@ export interface PlayerKeys {
 }
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
-  private readonly keys: PlayerKeys;
   private jumpState: JumpState = createJumpState();
 
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string, keys: PlayerKeys) {
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
     super(scene, x, y, texture);
     scene.add.existing(this);
     scene.physics.add.existing(this);
@@ -22,22 +21,26 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     body.setCollideWorldBounds(true);
     body.setDragX(ACCELERATION);
     body.maxVelocity.x = MOVE_SPEED;
-
-    this.keys = keys;
   }
 
-  update(time: number): void {
+  update(time: number, input: PlayerKeys | null): void {
     const body = this.body as Phaser.Physics.Arcade.Body;
 
-    const direction = (this.keys.right.isDown ? 1 : 0) - (this.keys.left.isDown ? 1 : 0);
+    if (!input) {
+      body.setAccelerationX(0);
+      body.setVelocityX(0);
+      return;
+    }
+
+    const direction = (input.right.isDown ? 1 : 0) - (input.left.isDown ? 1 : 0);
     body.setAccelerationX(direction * ACCELERATION);
 
     const grounded = body.blocked.down || body.touching.down;
     const result = updateJump(this.jumpState, {
       now: time,
       grounded,
-      pressed: Phaser.Input.Keyboard.JustDown(this.keys.jump),
-      released: Phaser.Input.Keyboard.JustUp(this.keys.jump),
+      pressed: Phaser.Input.Keyboard.JustDown(input.jump),
+      released: Phaser.Input.Keyboard.JustUp(input.jump),
     });
     this.jumpState = result.state;
 
