@@ -14,15 +14,20 @@ export function createControlState(): ControlState {
   return { mode: 'two-player', active: 'lumo' };
 }
 
-/** Tab: 2P → 1P(Lumo) → 1P(Umbra) → 2P. */
-export function nextControlState(state: ControlState): ControlState {
+/** Estado inicial para el modo elegido en el menú (activo Lumo en 1P). */
+export function controlStateForMode(mode: ControlMode): ControlState {
+  return { mode, active: 'lumo' };
+}
+
+/**
+ * Tab (DESIGN → Mecánicas > Personajes y controles): en dos jugadores no
+ * cambia nada; en un jugador alterna cuál de los dos maneja el WASD.
+ */
+export function switchActive(state: ControlState): ControlState {
   if (state.mode === 'two-player') {
-    return { mode: 'one-player', active: 'lumo' };
+    return state;
   }
-  if (state.active === 'lumo') {
-    return { mode: 'one-player', active: 'umbra' };
-  }
-  return { mode: 'two-player', active: 'lumo' };
+  return { mode: 'one-player', active: state.active === 'lumo' ? 'umbra' : 'lumo' };
 }
 
 /** Esquema de teclas con el que `who` juega en este estado; null si está inactivo. */

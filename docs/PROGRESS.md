@@ -9,8 +9,8 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 | 1. Esqueleto | completado | Mergeado en `main` (PR #2); pendiente solo el chequeo manual humano original |
 | 2. Movimiento | en curso | Pasos 1-3 hechos en `feature/hito-2-movimiento` (`levelParser`, jugadores + `test.json`, Tab + debug); Hito 2 listo salvo prueba manual humana |
 | 3. Peligros y puertas | completado | `rules.ts` + tests, pozos/abismo/puertas, muerte con reinicio, R y debug 1-8, `levels/01-03.json`; en `feature/hito-3-peligros-puertas`, listo salvo prueba manual humana |
-| 4. Botones y elementos | en curso | `switches.ts` + tests, botones/palancas/compuertas, cristal/barrera, gemas y niveles 4-7; en `feature/hito-4-botones-elementos`; listo salvo prueba manual humana |
-| 5. Pantallas y progreso | pendiente | |
+| 4. Botones y elementos | completado | Commit `2882077` en `feature/hito-4-botones-elementos` (push); listo salvo prueba manual humana |
+| 5. Pantallas y progreso | en curso | `scoring.ts`/`progress.ts` + tests, escenas Menu/LevelSelect/Result, HUD, pausa y HUD en `GameScene`; en `feature/hito-5-pantallas-progreso`; listo salvo prueba manual humana |
 | 6. Pulido y nivel final | pendiente | |
 
 ## Hito 1: Esqueleto
@@ -263,4 +263,41 @@ Pendiente humano:
 - [ ] Gemas: cada personaje recoge solo las suyas (dorada Lumo, violeta Umbra).
 - [ ] Niveles 4-7 completables en modo un jugador (Tab).
 
-Nota Git: `feature/hito-4-botones-elementos`; cambios en working tree sin commitear (pendiente de autorización).
+Nota Git: `feature/hito-4-botones-elementos`; commit `2882077` push al remoto.
+
+## Hito 5: Pantallas y progreso
+
+Rama: `feature/hito-5-pantallas-progreso`.
+
+Hecho:
+
+- `src/logic/scoring.ts` (sin Phaser): `scoreLevel` (1 estrella por terminar + 1 por todas las gemas + 1 bajo el tiempo objetivo, C2), `collectedAllGems` (nivel sin gemas = estrella automática), `finishedUnderTime` (clavar el objetivo cuenta) y `formatTime` (`mm:ss`). `tests/scoring.test.ts`: 8 tests.
+- `src/logic/progress.ts` (sin Phaser, storage inyectable): `StorageLike`, `Progress` (niveles desbloqueados + mejores estrellas por ID), `emptyProgress`, `sanitizeProgress`, `loadProgress`/`saveProgress` (nunca lanzan; JSON corrupto → vacío), `browserStorage` (localStorage dentro de try/catch), `isLevelUnlocked`, `starsFor` y `recordResult` (desbloquea el siguiente en orden y conserva la mejor puntuación). `tests/progress.test.ts`: 10 tests (incluye storage bloqueado).
+- `src/logic/controlMode.ts`: `createControlState` (por defecto 2P), `controlStateForMode(mode)` y `switchActive` (Tab: en 2P no hace nada, en 1P alterna el personaje activo). Se eliminó `nextControlState` (el ciclo de prueba del Hito 2). `tests/controlMode.test.ts` actualizado.
+- `src/scenes/ui.ts`: helper `createButton` (rect + texto con la paleta, estados habilitado/deshabilitado con hover, cursor) y `textStyle`; arte provisional por código.
+- `src/scenes/MenuScene.ts`: título + **[Un jugador]** / **[Dos jugadores]** (sin botón "Jugar", M3); elige el modo y abre el selector.
+- `src/scenes/LevelSelectScene.ts`: grilla de niveles (`levelIds()`, hoy 01-07) con estrellas; desbloqueo en orden con `isLevelUnlocked`; los bloqueados quedan deshabilitados; botón Volver.
+- `src/scenes/ResultScene.ts`: estrellas, tiempo `mm:ss`, gemas `X/Y` y botones [Siguiente nivel] [Reintentar] [Volver al menú]; en el último nivel se omite "Siguiente" (M4).
+- `src/scenes/GameScene.ts`: HUD (tiempo `mm:ss`, gemas `X/Y`, icono 1P/2P, M5); cronómetro por acumulación de `delta` (no avanza en pausa, muerte ni victoria); **pausa como overlay** (Esc) que congela física y tweens con [Reanudar] [Reiniciar] [Silencio] (B1/M4/M8, silencio vía `this.sound.mute`); la victoria calcula `scoreLevel`, guarda el progreso con `recordResult`+`localStorage` y abre `ResultScene`; se quitó el avance automático de nivel del Hito 4; las teclas 1-8 para saltar de nivel ahora solo funcionan con `?debug=1`.
+- `src/main.ts`: registro de escenas `[Boot, Menu, LevelSelect, Game, Result]`; `BootScene` arranca en `Menu`.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run typecheck` | en verde |
+| `npm test` | 93/93 tests en verde (11 archivos) |
+| `npm run validate-levels` | en verde (7 niveles válidos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+| `npm run dev` | HTTP 200 en `/`, `MenuScene.ts`, `LevelSelectScene.ts`, `ResultScene.ts` y `GameScene.ts` |
+
+Pendiente humano:
+
+- [ ] Menú → [Un jugador]/[Dos jugadores] abre el selector con las estrellas guardadas; los niveles bloqueados no se pueden elegir.
+- [ ] El HUD muestra `mm:ss`, gemas `X/Y` e icono 1P/2P; el tiempo se congela al pausar (Esc) y al morir/ganar.
+- [ ] Pausa (Esc): congela física y animaciones; [Reiniciar] y [Silencio] funcionan; Esc reanuda; Tab y el movimiento quedan deshabilitados.
+- [ ] Al ganar aparece la pantalla de resultado con tiempo, gemas y estrellas; [Siguiente]/[Reintentar]/[Volver al menú] navegan bien; en el nivel 07 se omite "Siguiente".
+- [ ] El progreso y las estrellas persisten al recargar la página; los niveles se desbloquean en orden.
+- [ ] R reinicia el nivel con el cronómetro a 0; la muerte reinicia mostrando los 0,5 s de pausa.
+
+Nota Git: `feature/hito-5-pantallas-progreso`; cambios en working tree sin commitear (pendiente de autorización).
