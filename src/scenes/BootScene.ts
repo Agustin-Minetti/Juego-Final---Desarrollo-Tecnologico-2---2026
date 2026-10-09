@@ -19,6 +19,12 @@ export class BootScene extends Phaser.Scene {
     this.generatePitTextures();
     this.generateAbyssTexture();
     this.generateDoorTextures();
+    this.generateButtonTexture();
+    this.generateLeverTexture();
+    this.generateGateTexture();
+    this.generateGemTextures();
+    this.generateCrystalTexture();
+    this.generateBarrierTexture();
     this.scene.start('Game');
   }
 
@@ -96,6 +102,86 @@ export class BootScene extends Phaser.Scene {
     gfx.strokeCircle(cx, 13, 9);
     gfx.strokeRoundedRect(cx - 11, 18, 22, 20, 8);
     gfx.generateTexture(TEXTURE_KEYS.umbra, width, height);
+    gfx.destroy();
+  }
+
+  private generateButtonTexture(): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(COLORS.button), 1);
+    gfx.fillRoundedRect(0, 0, TILE_SIZE, 10, 3);
+    gfx.fillStyle(hex(COLORS.lumoHalo), 0.6);
+    gfx.fillRoundedRect(2, 1, TILE_SIZE - 4, 4, 2);
+    gfx.generateTexture(TEXTURE_KEYS.button, TILE_SIZE, 10);
+    gfx.destroy();
+  }
+
+  private generateLeverTexture(): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(COLORS.lever), 1);
+    gfx.fillRoundedRect(TILE_SIZE / 2 - 3, 0, 6, 15, 3);
+    gfx.fillStyle(hex(COLORS.lever), 1);
+    gfx.fillCircle(TILE_SIZE / 2, 4, 4);
+    gfx.fillStyle(hex(COLORS.gate), 1);
+    gfx.fillRoundedRect(2, 14, TILE_SIZE - 4, 6, 2);
+    gfx.generateTexture(TEXTURE_KEYS.lever, TILE_SIZE, 20);
+    gfx.destroy();
+  }
+
+  private generateGateTexture(): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(COLORS.gate), 1);
+    gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    gfx.lineStyle(3, hex(COLORS.gateEdge), 1);
+    gfx.strokeRect(2, 2, TILE_SIZE - 4, TILE_SIZE - 4);
+    gfx.lineBetween(4, TILE_SIZE / 2, TILE_SIZE - 4, TILE_SIZE / 2);
+    gfx.generateTexture(TEXTURE_KEYS.gate, TILE_SIZE, TILE_SIZE);
+    gfx.destroy();
+  }
+
+  private generateGemTextures(): void {
+    this.generateGemTexture(TEXTURE_KEYS.gemGold, COLORS.gemGold);
+    this.generateGemTexture(TEXTURE_KEYS.gemViolet, COLORS.gemViolet);
+  }
+
+  private generateGemTexture(key: string, color: string): void {
+    const gfx = this.add.graphics();
+    const c = TILE_SIZE / 2;
+    gfx.fillStyle(hex(color), 1);
+    gfx.beginPath();
+    gfx.moveTo(c, c - 11);
+    gfx.lineTo(c + 11, c);
+    gfx.lineTo(c, c + 11);
+    gfx.lineTo(c - 11, c);
+    gfx.closePath();
+    gfx.fillPath();
+    gfx.lineStyle(2, hex(COLORS.text), 0.8);
+    gfx.strokePath();
+    gfx.generateTexture(key, TILE_SIZE, TILE_SIZE);
+    gfx.destroy();
+  }
+
+  private generateCrystalTexture(): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(COLORS.crystal), 1);
+    gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    gfx.lineStyle(2, hex(COLORS.crystalEdge), 1);
+    gfx.strokeRect(1, 1, TILE_SIZE - 2, TILE_SIZE - 2);
+    gfx.lineBetween(2, 2, TILE_SIZE - 2, TILE_SIZE - 2);
+    gfx.lineBetween(TILE_SIZE - 2, 2, 2, TILE_SIZE - 2);
+    gfx.generateTexture(TEXTURE_KEYS.crystal, TILE_SIZE, TILE_SIZE);
+    gfx.destroy();
+  }
+
+  private generateBarrierTexture(): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(COLORS.barrier), 0.5);
+    gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    gfx.lineStyle(2, hex(COLORS.barrierEdge), 1);
+    gfx.strokeRect(1, 1, TILE_SIZE - 2, TILE_SIZE - 2);
+    for (let i = TILE_SIZE / 4; i < TILE_SIZE; i += TILE_SIZE / 4) {
+      gfx.lineBetween(i, 2, i, TILE_SIZE - 2);
+    }
+    gfx.generateTexture(TEXTURE_KEYS.barrier, TILE_SIZE, TILE_SIZE);
     gfx.destroy();
   }
 }

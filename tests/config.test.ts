@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   ACCELERATION,
   COYOTE_TIME_MS,
+  DISSOLVE_MS,
+  GATE_TWEEN_MS,
   GRAVITY,
   JUMP_BUFFER_MS,
   JUMP_CUT_FACTOR,
@@ -19,6 +21,8 @@ describe('config/physics', () => {
     expect(COYOTE_TIME_MS).toBe(100);
     expect(JUMP_BUFFER_MS).toBe(100);
     expect(JUMP_CUT_FACTOR).toBe(0.5);
+    expect(GATE_TWEEN_MS).toBe(200);
+    expect(DISSOLVE_MS).toBe(300);
   });
 });
 

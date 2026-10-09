@@ -4,6 +4,7 @@ import {
   diesIn,
   hazardsTouching,
   isStandingOn,
+  rectsOverlap,
   resolveOutcome,
   type Character,
   type Hazard,
@@ -52,6 +53,23 @@ describe('isStandingOn', () => {
   it('falso si no hay solape horizontal', () => {
     expect(isStandingOn({ left: 40, right: 60, bottom: 200 }, surface)).toBe(false);
     expect(isStandingOn({ left: 132, right: 156, bottom: 200 }, surface)).toBe(false);
+  });
+});
+
+describe('rectsOverlap', () => {
+  const cell = { left: 32, right: 64, top: 64, bottom: 96 };
+
+  it('detecta un cuerpo dentro de la celda', () => {
+    expect(rectsOverlap({ left: 40, right: 56, top: 70, bottom: 90 }, cell)).toBe(true);
+  });
+
+  it('detecta el solape parcial con el borde superior', () => {
+    expect(rectsOverlap({ left: 40, right: 56, top: 40, bottom: 66 }, cell)).toBe(true);
+  });
+
+  it('no detecta un cuerpo que solo toca el borde', () => {
+    expect(rectsOverlap({ left: 40, right: 56, top: 32, bottom: 64 }, cell)).toBe(false);
+    expect(rectsOverlap({ left: 64, right: 80, top: 70, bottom: 90 }, cell)).toBe(false);
   });
 });
 
