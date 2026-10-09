@@ -45,9 +45,12 @@ export interface HazardPoints {
   shadowPit: Point[]; // s
 }
 
+export type StaticTileKind = 'wall' | 'lightPit' | 'shadowPit';
+
 export interface StaticTile {
   tx: number;
   ty: number;
+  kind: StaticTileKind;
 }
 
 export interface ParsedLevel extends LevelData {
@@ -235,12 +238,12 @@ export function parseLevel(raw: string): ParsedLevel {
         hazards.abism.push(tileToWorld(tx, ty));
       } else if (ch === 'p') {
         hazards.lightPit.push(tileToWorld(tx, ty));
-        staticTiles.push({ tx, ty });
+        staticTiles.push({ tx, ty, kind: 'lightPit' });
       } else if (ch === 's') {
         hazards.shadowPit.push(tileToWorld(tx, ty));
-        staticTiles.push({ tx, ty });
+        staticTiles.push({ tx, ty, kind: 'shadowPit' });
       } else if (ch === '#') {
-        staticTiles.push({ tx, ty });
+        staticTiles.push({ tx, ty, kind: 'wall' });
       } else if (ch === 'c') {
         crystals.push(tileToWorld(tx, ty));
       } else if (ch === 'b') {

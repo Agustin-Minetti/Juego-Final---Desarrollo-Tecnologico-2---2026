@@ -8,7 +8,7 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 | --- | --- | --- |
 | 1. Esqueleto | completado | Mergeado en `main` (PR #2); pendiente solo el chequeo manual humano original |
 | 2. Movimiento | en curso | Pasos 1-3 hechos en `feature/hito-2-movimiento` (`levelParser`, jugadores + `test.json`, Tab + debug); Hito 2 listo salvo prueba manual humana |
-| 3. Peligros y puertas | pendiente | |
+| 3. Peligros y puertas | en curso | `rules.ts` + tests, pozos/abismo/puertas, muerte con reinicio, R y debug 1-8, `levels/01-03.json`; en `feature/hito-3-peligros-puertas`, listo salvo prueba manual humana |
 | 4. Botones y elementos | pendiente | |
 | 5. Pantallas y progreso | pendiente | |
 | 6. Pulido y nivel final | pendiente | |
@@ -177,3 +177,43 @@ Verificaciones:
 Pendiente humano:
 
 - [ ] Con `npm run dev`: verificar que ambos se mueven a la vez (2P), que Tab cicla 2P → 1P(Lumo) → 1P(Umbra) → 2P, que en 1P el activo se maneja con A/D/W —también cuando es Umbra— y las flechas no, que el inactivo queda quieto pero con física activa (dejarlo en el borde de una plataforma y comprobar que cae), y que `?debug=1` muestra el debug de Arcade + el indicador de modo.
+
+## Hito 3: Peligros y puertas
+
+### Reglas, peligros, puertas y niveles 1-3 (rama `feature/hito-3-peligros-puertas`)
+
+Hecho:
+
+- `src/logic/rules.ts`: tipos `Character`/`Hazard`; `diesIn` (pozo de luz disuelve a Umbra, pozo de sombra apaga a Lumo, abismo mata a ambos); `resolveOutcome` (la muerte gana sobre la victoria, B2); `isStandingOn` (criterio "encima" de puertas/botones, B5); `buildHazardMap` + `hazardsTouching` (detección de contacto personaje/peligro por celdas, con margen configurable).
+- `tests/rules.test.ts`: 6 combinaciones personaje/peligro, prioridad de muerte y criterio "encima"; se sumaron casos de `hazardsTouching` (apoyo sobre pozo, costado, abismo sin margen).
+- `src/config/textures.ts` y `src/config/colors.ts`: claves/colores de `lightPit`, `shadowPit`, `abyss` y puertas `doorLumo`/`doorUmbra`.
+- `src/scenes/BootScene.ts`: `generatePitTextures` (pozo de luz `#ffe08a` y de sombra `#4b2d73`), `generateAbyssTexture` y `generateDoorTextures` por código.
+- `src/config/keys.ts`: `debugLevels` (teclas 1-8) además de R (reiniciar) y Tab (swap).
+- `src/logic/levelParser.ts`: `StaticTile` ahora lleva `kind` (`wall` | `lightPit` | `shadowPit`) para distinguir el piso de los pozos sólidos.
+- `src/config/levels.ts`: registro `LEVELS` con `01`-`03` (import `?raw`), `DEFAULT_LEVEL`, `levelIds()` y `hasLevel()`.
+- `src/objects/Door.ts`: puerta sólida 32×32; se ilumina (`setLit`) cuando su personaje está encima (`isPlayerStanding` con `isStandingOn`).
+- `src/objects/Hazard.ts`: peligro por celda; pozo → cuerpo sólido (actúa de piso, A6); abismo → hueco.
+- `src/scenes/GameScene.ts`: carga el nivel de la progresión (o el elegido por debug), grupo estático de paredes, pozos sólidos con collider (sin colisión entre personajes, B3), abismo como sensor, puertas sólidas; muerte con pausa de 0.5 s y reinicio automático; victoria con ambos personajes sobre sus puertas y overlay provisional "Nivel completado"; R reinicia el nivel; debug `?debug=1` con teclas 1-8 para saltar de nivel (`hasLevel`) y etiqueta de nivel/modo. El reset conserva el modo de control (B7).
+- `levels/01.json` (Primeros pasos, piso plano), `levels/02.json` (piso compartido con pozo de luz y de sombra: cada uno cruza el suyo caminando y salta el opuesto), `levels/03.json` (abismo): completables en modo un jugador.
+
+Decisión de diseño: las **puertas son tiles sólidos** y el personaje se gana **parado sobre ellas** (`isStandingOn`, B5); se colocan a ras del piso en los niveles 1-3.
+
+Rediseño del nivel 02 (pedido del usuario): el diseño previo usaba **dos corredores aislados**, por lo que el personaje nunca podía pisar el pozo opuesto y no se podía comprobar la muerte. Ahora es un **piso compartido** con ambos pozos al alcance de los dos: se verifica que pisar el pozo opuesto mata (Lumo en sombra, Umbra en luz) y que cruzar el propio es seguro.
+
+Ajustes **temporales de testeo** (pedido explícito del usuario; se quitarán para la build final): las teclas **1/2/3** saltan al nivel `01`/`02`/`03` **sin necesidad de `?debug=1`**, y al **completar un nivel se avanza automáticamente al siguiente** (1,5 s de overlay "Nivel completado"); en el último nivel disponible no hay avance y queda R para reiniciar. El `?debug=1` sigue controlando el dibujo de Arcade y la etiqueta de nivel/modo.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run typecheck` | en verde |
+| `npm test` | 54/54 tests en verde (7 archivos) |
+| `npm run validate-levels` | en verde (3 niveles válidos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+
+Pendiente humano:
+
+- [ ] Con `npm run dev`: cada personaje muere solo en lo que corresponde (Lumo en pozo de sombra y abismo; Umbra en pozo de luz y abismo) y el otro cruza el pozo sin efecto. En el nivel 02, probar a propósito pisar el pozo opuesto.
+- [ ] Ganar requiere a los dos sobre sus puertas al mismo tiempo (probar en 2P y en 1P con Tab).
+- [ ] Niveles 1-3 completables; R reinicia el nivel.
+- [ ] Teclas 1/2/3 cambian de nivel sin `?debug=1`; al completar un nivel se avanza automáticamente al siguiente.

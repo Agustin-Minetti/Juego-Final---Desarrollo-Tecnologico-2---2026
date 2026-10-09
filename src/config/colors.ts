@@ -9,4 +9,5 @@ export const COLORS = {
   umbraOutline: '#c9a6ff',
   lightPit: '#ffe08a',
   shadowPit: '#4b2d73',
+  abyss: '#0f0b1a',
 } as const;
