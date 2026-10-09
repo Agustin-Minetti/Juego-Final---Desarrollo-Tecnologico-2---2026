@@ -25,7 +25,7 @@ export class BootScene extends Phaser.Scene {
     this.generateGemTextures();
     this.generateCrystalTexture();
     this.generateBarrierTexture();
-    this.scene.start('Game');
+    this.scene.start('Menu');
   }
 
   private generateWallTexture(): void {

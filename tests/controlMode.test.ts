@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import {
+  controlStateForMode,
   createControlState,
-  nextControlState,
   schemeFor,
+  switchActive,
   type ControlState,
 } from '../src/logic/controlMode';
 
@@ -13,26 +14,24 @@ describe('createControlState', () => {
   });
 });
 
-describe('nextControlState', () => {
-  it('cicla 2P → 1P(Lumo) → 1P(Umbra) → 2P', () => {
-    let state: ControlState = createControlState();
+describe('controlStateForMode', () => {
+  it('respeta el modo elegido y arranca con Lumo activo', () => {
+    expect(controlStateForMode('one-player')).toEqual({ mode: 'one-player', active: 'lumo' });
+    expect(controlStateForMode('two-player')).toEqual({ mode: 'two-player', active: 'lumo' });
+  });
+});
 
-    state = nextControlState(state);
-    expect(state).toEqual({ mode: 'one-player', active: 'lumo' });
-
-    state = nextControlState(state);
-    expect(state).toEqual({ mode: 'one-player', active: 'umbra' });
-
-    state = nextControlState(state);
-    expect(state).toEqual({ mode: 'two-player', active: 'lumo' });
+describe('switchActive (Tab)', () => {
+  it('en dos jugadores no cambia nada', () => {
+    const state = createControlState();
+    expect(switchActive(state)).toEqual({ mode: 'two-player', active: 'lumo' });
   });
 
-  it('vuelve a empezar el ciclo tras completarlo', () => {
-    let state = createControlState();
-    for (let i = 0; i < 3; i++) {
-      state = nextControlState(state);
-    }
-    expect(nextControlState(state)).toEqual({ mode: 'one-player', active: 'lumo' });
+  it('en un jugador alterna el personaje activo', () => {
+    const lumo: ControlState = { mode: 'one-player', active: 'lumo' };
+    const umbra: ControlState = { mode: 'one-player', active: 'umbra' };
+    expect(switchActive(lumo)).toEqual(umbra);
+    expect(switchActive(umbra)).toEqual(lumo);
   });
 });
 

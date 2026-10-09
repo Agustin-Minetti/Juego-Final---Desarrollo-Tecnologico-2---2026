@@ -7,12 +7,19 @@ import { DEFAULT_LEVEL, hasLevel, LEVELS, levelIds } from '../config/levels';
 import { TEXTURE_KEYS } from '../config/textures';
 import {
   createControlState,
-  nextControlState,
   schemeFor,
+  switchActive,
   type ControlledPlayer,
   type ControlState,
 } from '../logic/controlMode';
 import { parseLevel, type ParsedLevel } from '../logic/levelParser';
+import {
+  browserStorage,
+  loadProgress,
+  recordResult,
+  saveProgress,
+} from '../logic/progress';
+import { formatTime, scoreLevel } from '../logic/scoring';
 import {
   buildHazardMap,
   diesIn,
@@ -33,9 +40,9 @@ import { Gem } from '../objects/Gem';
 import { Hazard } from '../objects/Hazard';
 import { Lever } from '../objects/Lever';
 import { Player, type PlayerKeys } from '../objects/Player';
+import { createButton, textStyle, type UiButton } from './ui';
 
 const DEATH_PAUSE_MS = 500;
-const LEVEL_ADVANCE_MS = 1500;
 const PIT_CONTACT_MARGIN = 2;
 
 type SceneStatus = 'playing' | 'dead' | 'won';
@@ -58,8 +65,13 @@ export class GameScene extends Phaser.Scene {
   private arrowKeys?: PlayerKeys;
   private swapKey?: Phaser.Input.Keyboard.Key;
   private restartKey?: Phaser.Input.Keyboard.Key;
+  private pauseKey?: Phaser.Input.Keyboard.Key;
   private debugKeys: Phaser.Input.Keyboard.Key[] = [];
   private modeLabel?: Phaser.GameObjects.Text;
+  private hudTime?: Phaser.GameObjects.Text;
+  private hudGems?: Phaser.GameObjects.Text;
+  private pauseOverlay?: Phaser.GameObjects.Container;
+  private muteButton?: UiButton;
   private pitBodies: Hazard[] = [];
   private pitCells = new Map<string, HazardType>();
   private abyssCells = new Map<string, HazardType>();
@@ -75,6 +87,9 @@ export class GameScene extends Phaser.Scene {
   private levelId: string = DEFAULT_LEVEL;
   private controlState: ControlState = createControlState();
   private status: SceneStatus = 'playing';
+  private paused = false;
+  private elapsedMs = 0;
+  private timeTargetMs = 0;
 
   constructor() {
     super('Game');
@@ -84,6 +99,8 @@ export class GameScene extends Phaser.Scene {
     this.levelId = data.levelId !== undefined && hasLevel(data.levelId) ? data.levelId : DEFAULT_LEVEL;
     this.controlState = data.controlState ?? createControlState();
     this.status = 'playing';
+    this.paused = false;
+    this.elapsedMs = 0;
     this.pitCells = new Map();
     this.abyssCells = new Map();
     this.debugKeys = [];
@@ -100,6 +117,7 @@ export class GameScene extends Phaser.Scene {
 
   create(): void {
     const level = parseLevel(LEVELS[this.levelId]);
+    this.timeTargetMs = level.timeTarget * 1000;
 
     const walls = this.physics.add.staticGroup();
     for (const tile of level.staticTiles) {
@@ -134,6 +152,7 @@ export class GameScene extends Phaser.Scene {
     };
     this.swapKey = keyboard.addKey(KEY_CODES.swapCharacter);
     this.restartKey = keyboard.addKey(KEY_CODES.restart);
+    this.pauseKey = keyboard.addKey(KEY_CODES.pause);
     this.debugKeys = KEY_CODES.debugLevels.map((code) => keyboard.addKey(code));
 
     this.lumo = new Player(this, level.spawns.lumo.x, level.spawns.lumo.y, TEXTURE_KEYS.lumo);
@@ -163,15 +182,89 @@ export class GameScene extends Phaser.Scene {
       this.collectGem(gem as Gem),
     );
 
+    this.createHud();
+    this.createPauseOverlay();
+
     if (isDebugMode()) {
       this.modeLabel = this.add
-        .text(8, 8, this.modeLabelText(), {
+        .text(12, 70, this.modeLabelText(), {
           fontFamily: 'monospace',
           fontSize: '16px',
           color: COLORS.text,
         })
-        .setDepth(100);
+        .setDepth(260);
     }
+  }
+
+  /** HUD durante el nivel: tiempo `mm:ss`, gemas `X/Y` e icono del modo (M5). */
+  private createHud(): void {
+    const pad = 12;
+    const mode = this.controlState.mode === 'two-player' ? '2P' : '1P';
+    this.hudTime = this.add.text(pad, pad, formatTime(0), textStyle(COLORS.text, 22)).setDepth(250);
+    this.hudGems = this.add
+      .text(pad, pad + 30, `0/${this.totalGems}`, textStyle(COLORS.gemGold, 18))
+      .setDepth(250);
+    this.add
+      .text(this.scale.width - pad, pad, mode, textStyle(COLORS.text, 22))
+      .setOrigin(1, 0)
+      .setDepth(250);
+  }
+
+  /** Pausa como overlay dentro de GameScene (M8): congela física y tweens. */
+  private createPauseOverlay(): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+
+    const shade = this.add
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.6)
+      .setDepth(300);
+    const title = this.add
+      .text(cx, cy - 110, 'Pausa', {
+        fontFamily: 'monospace',
+        fontSize: '36px',
+        color: COLORS.text,
+      })
+      .setOrigin(0.5)
+      .setDepth(301);
+
+    const resume = createButton(this, cx, cy - 20, 'Reanudar (Esc)', () => this.togglePause(), {
+      width: 260,
+    });
+    const restart = createButton(this, cx, cy + 40, 'Reiniciar (R)', () => this.restartLevel(this.levelId), {
+      width: 260,
+    });
+    this.muteButton = createButton(this, cx, cy + 100, this.muteLabel(), () => this.toggleMute(), {
+      width: 260,
+    });
+
+    this.pauseOverlay = this.add
+      .container(0, 0, [shade, title, resume.root, restart.root, this.muteButton.root])
+      .setDepth(300)
+      .setVisible(false);
+  }
+
+  private muteLabel(): string {
+    return this.sound.mute ? 'Silencio: ON' : 'Silencio: OFF';
+  }
+
+  private toggleMute(): void {
+    this.sound.mute = !this.sound.mute;
+    this.muteButton?.label.setText(this.muteLabel());
+  }
+
+  private togglePause(): void {
+    if (this.status !== 'playing') {
+      return;
+    }
+    this.paused = !this.paused;
+    if (this.paused) {
+      this.physics.pause();
+      this.tweens.pauseAll();
+    } else {
+      this.physics.resume();
+      this.tweens.resumeAll();
+    }
+    this.pauseOverlay?.setVisible(this.paused);
   }
 
   private createHazards(level: ParsedLevel): void {
@@ -300,19 +393,25 @@ export class GameScene extends Phaser.Scene {
     });
   }
 
-  update(time: number): void {
+  update(time: number, delta: number): void {
     if (this.restartKey && Phaser.Input.Keyboard.JustDown(this.restartKey)) {
       this.restartLevel(this.levelId);
       return;
     }
-    this.updateDebugKeys();
-
-    if (this.status !== 'playing') {
+    if (isDebugMode()) {
+      this.updateDebugKeys();
+    }
+    if (this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
+      this.togglePause();
+    }
+    if (this.status !== 'playing' || this.paused) {
       return;
     }
 
+    this.elapsedMs += delta;
+
     if (this.swapKey && Phaser.Input.Keyboard.JustDown(this.swapKey)) {
-      this.controlState = nextControlState(this.controlState);
+      this.controlState = switchActive(this.controlState);
       this.modeLabel?.setText(this.modeLabelText());
     }
 
@@ -325,6 +424,9 @@ export class GameScene extends Phaser.Scene {
     }
 
     this.updateSwitches();
+
+    this.hudTime?.setText(formatTime(this.elapsedMs));
+    this.hudGems?.setText(`${this.collectedGems}/${this.totalGems}`);
 
     const diedThisFrame = this.checkDeaths();
     const lumoLit = !!this.lumo && this.doorLumo?.isPlayerStanding(this.lumo) === true;
@@ -375,39 +477,28 @@ export class GameScene extends Phaser.Scene {
   private onVictory(): void {
     this.status = 'won';
     this.physics.pause();
-    this.add
-      .text(this.scale.width / 2, this.scale.height / 2, 'Nivel completado', {
-        fontFamily: 'monospace',
-        fontSize: '32px',
-        color: COLORS.text,
-      })
-      .setOrigin(0.5)
-      .setDepth(200);
 
-    const nextId = this.nextLevelId();
-    const hint =
-      nextId !== null ? `Cargando nivel ${nextId}…` : 'Último nivel · R para reiniciar';
-    this.add
-      .text(this.scale.width / 2, this.scale.height / 2 + 40, hint, {
-        fontFamily: 'monospace',
-        fontSize: '16px',
-        color: COLORS.text,
-      })
-      .setOrigin(0.5)
-      .setDepth(200);
-
-    if (nextId !== null) {
-      this.time.delayedCall(LEVEL_ADVANCE_MS, () => this.restartLevel(nextId));
-    }
-  }
-
-  private nextLevelId(): string | null {
     const ids = levelIds();
-    const index = ids.indexOf(this.levelId);
-    if (index >= 0 && index + 1 < ids.length) {
-      return ids[index + 1];
-    }
-    return null;
+    const index = Math.max(0, ids.indexOf(this.levelId));
+    const score = scoreLevel({
+      gemsCollected: this.collectedGems,
+      totalGems: this.totalGems,
+      elapsedMs: this.elapsedMs,
+      timeTargetMs: this.timeTargetMs,
+    });
+
+    const storage = browserStorage();
+    saveProgress(storage, recordResult(loadProgress(storage), this.levelId, index, score.stars, ids.length));
+
+    this.scene.start('Result', {
+      levelId: this.levelId,
+      levelIndex: index,
+      mode: this.controlState.mode,
+      elapsedMs: this.elapsedMs,
+      gemsCollected: this.collectedGems,
+      totalGems: this.totalGems,
+      score,
+    });
   }
 
   private restartLevel(levelId: string): void {

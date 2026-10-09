@@ -1,6 +1,9 @@
 import Phaser from 'phaser';
 import { BootScene } from './scenes/BootScene';
 import { GameScene } from './scenes/GameScene';
+import { LevelSelectScene } from './scenes/LevelSelectScene';
+import { MenuScene } from './scenes/MenuScene';
+import { ResultScene } from './scenes/ResultScene';
 import { isDebugMode } from './config/debug';
 import { GAME_WIDTH, GAME_HEIGHT } from './config/game';
 import { GRAVITY } from './config/physics';
@@ -22,5 +25,5 @@ new Phaser.Game({
       debug: isDebugMode(),
     },
   },
-  scene: [BootScene, GameScene],
+  scene: [BootScene, MenuScene, LevelSelectScene, GameScene, ResultScene],
 });
