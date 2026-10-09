@@ -10,4 +10,14 @@ export const KEY_CODES = {
   restart: Phaser.Input.Keyboard.KeyCodes.R,
   pause: Phaser.Input.Keyboard.KeyCodes.ESC,
   swapCharacter: Phaser.Input.Keyboard.KeyCodes.TAB,
+  debugLevels: [
+    Phaser.Input.Keyboard.KeyCodes.ONE,
+    Phaser.Input.Keyboard.KeyCodes.TWO,
+    Phaser.Input.Keyboard.KeyCodes.THREE,
+    Phaser.Input.Keyboard.KeyCodes.FOUR,
+    Phaser.Input.Keyboard.KeyCodes.FIVE,
+    Phaser.Input.Keyboard.KeyCodes.SIX,
+    Phaser.Input.Keyboard.KeyCodes.SEVEN,
+    Phaser.Input.Keyboard.KeyCodes.EIGHT,
+  ],
 } as const;

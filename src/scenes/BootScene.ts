@@ -16,6 +16,9 @@ export class BootScene extends Phaser.Scene {
     this.generateWallTexture();
     this.generateLumoTexture();
     this.generateUmbraTexture();
+    this.generatePitTextures();
+    this.generateAbyssTexture();
+    this.generateDoorTextures();
     this.scene.start('Game');
   }
 
@@ -40,6 +43,44 @@ export class BootScene extends Phaser.Scene {
     gfx.fillStyle(hex(COLORS.lumo), 1);
     gfx.fillCircle(cx, cy, 12);
     gfx.generateTexture(TEXTURE_KEYS.lumo, width, height);
+    gfx.destroy();
+  }
+
+  private generatePitTextures(): void {
+    this.generatePitTexture(TEXTURE_KEYS.lightPit, COLORS.lightPit);
+    this.generatePitTexture(TEXTURE_KEYS.shadowPit, COLORS.shadowPit);
+  }
+
+  private generatePitTexture(key: string, color: string): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(color), 0.55);
+    gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    gfx.lineStyle(2, hex(color), 1);
+    gfx.strokeRect(1, 1, TILE_SIZE - 2, TILE_SIZE - 2);
+    gfx.generateTexture(key, TILE_SIZE, TILE_SIZE);
+    gfx.destroy();
+  }
+
+  private generateAbyssTexture(): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(COLORS.abyss), 1);
+    gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    gfx.generateTexture(TEXTURE_KEYS.abyss, TILE_SIZE, TILE_SIZE);
+    gfx.destroy();
+  }
+
+  private generateDoorTextures(): void {
+    this.generateDoorTexture(TEXTURE_KEYS.doorLumo, COLORS.lumo);
+    this.generateDoorTexture(TEXTURE_KEYS.doorUmbra, COLORS.umbra);
+  }
+
+  private generateDoorTexture(key: string, color: string): void {
+    const gfx = this.add.graphics();
+    gfx.fillStyle(hex(color), 0.25);
+    gfx.fillRect(0, 0, TILE_SIZE, TILE_SIZE);
+    gfx.lineStyle(3, hex(color), 1);
+    gfx.strokeRect(2, 2, TILE_SIZE - 4, TILE_SIZE - 4);
+    gfx.generateTexture(key, TILE_SIZE, TILE_SIZE);
     gfx.destroy();
   }
 
