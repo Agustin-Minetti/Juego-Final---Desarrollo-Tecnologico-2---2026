@@ -65,6 +65,11 @@ export interface BodyBounds {
   bottom: number;
 }
 
+/** ¿Se solapan dos rectángulos? (usado para saber si una celda sigue ocupada). */
+export function rectsOverlap(a: BodyBounds, b: BodyBounds): boolean {
+  return a.left < b.right && a.right > b.left && a.top < b.bottom && a.bottom > b.top;
+}
+
 export interface HazardCell {
   tx: number;
   ty: number;

@@ -8,8 +8,8 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 | --- | --- | --- |
 | 1. Esqueleto | completado | Mergeado en `main` (PR #2); pendiente solo el chequeo manual humano original |
 | 2. Movimiento | en curso | Pasos 1-3 hechos en `feature/hito-2-movimiento` (`levelParser`, jugadores + `test.json`, Tab + debug); Hito 2 listo salvo prueba manual humana |
-| 3. Peligros y puertas | en curso | `rules.ts` + tests, pozos/abismo/puertas, muerte con reinicio, R y debug 1-8, `levels/01-03.json`; en `feature/hito-3-peligros-puertas`, listo salvo prueba manual humana |
-| 4. Botones y elementos | pendiente | |
+| 3. Peligros y puertas | completado | `rules.ts` + tests, pozos/abismo/puertas, muerte con reinicio, R y debug 1-8, `levels/01-03.json`; en `feature/hito-3-peligros-puertas`, listo salvo prueba manual humana |
+| 4. Botones y elementos | en curso | `switches.ts` + tests, botones/palancas/compuertas, cristal/barrera, gemas y niveles 4-7; en `feature/hito-4-botones-elementos`; listo salvo prueba manual humana |
 | 5. Pantallas y progreso | pendiente | |
 | 6. Pulido y nivel final | pendiente | |
 
@@ -217,3 +217,50 @@ Pendiente humano:
 - [ ] Ganar requiere a los dos sobre sus puertas al mismo tiempo (probar en 2P y en 1P con Tab).
 - [ ] Niveles 1-3 completables; R reinicia el nivel.
 - [ ] Teclas 1/2/3 cambian de nivel sin `?debug=1`; al completar un nivel se avanza automáticamente al siguiente.
+
+## Hito 4: Botones y elementos
+
+### Lógica, objetos, niveles 4-7 (rama `feature/hito-4-botones-elementos`)
+
+Hecho:
+
+- `src/logic/switches.ts` (sin Phaser): `SwitchId`, `LeverRuntime`, `createLever`, `toggleLeverOnContact` (alterna solo en el borde not-touching → touching) y la clase `SwitchSystem` (`setPressedButtons`, `setTouchingLevers`, `isLeverOn`, `isGateOpen` = botón pisado **o** palanca encendida del mismo ID). `tests/switches.test.ts`: 9 tests.
+- `src/logic/rules.ts`: `rectsOverlap(a, b)` + tests en `tests/rules.test.ts` (usado por `cellOccupied` de compuertas).
+- `src/config/colors.ts`: `import Phaser`; colores de `button`, `lever`, `gate`, `gateEdge`, `gemGold`, `gemViolet`, `crystal`, `crystalEdge`, `barrier`, `barrierEdge`; `SWITCH_COLORS` (rojo/azul/verde/amarillo), `colorForSwitch(id)`, `colorToNumber(color)`.
+- `src/config/textures.ts`: claves `button`, `lever`, `gate`, `gemGold`, `gemViolet`, `crystal`, `barrier`.
+- `src/config/physics.ts`: `GATE_TWEEN_MS = 200`, `DISSOLVE_MS = 300` (+ asserts en `tests/config.test.ts`).
+- `src/scenes/BootScene.ts`: texturas por código para botón, palanca, compuerta, gemas (dorada/violeta), cristal y barrera.
+- `src/objects/Dissolvable.ts`: bloque sólido estático que pierde la **solidez al instante** y hace el tween de disolución (300 ms) antes de destruirse; `Crystal.ts` (Lumo lo disuelve) y `Barrier.ts` (Umbra la apaga).
+- `src/objects/Button.ts`: activo mientras un personaje lo pisa (`isStandingOn`, B5); tinte por ID; se hunde 3 px al pisarlo.
+- `src/objects/Lever.ts`: alterna por borde de contacto; tinte encendido/apagado; cualquiera de los dos la usa.
+- `src/objects/Gate.ts`: cuerpo dinámico immovable sin gravedad; fases `closed → opening → open → closing` con tween de 200 ms hacia arriba; al cerrarse, si un personaje ocupa el tile destino detiene el cierre (nunca mata, A5/B9).
+- `src/objects/Gem.ts`: cuerpo estático; `kind` gold/violet, se recoge solo con su personaje y hace tween de recogida.
+- `src/scenes/GameScene.ts`: `createElements` (botones/palancas/compuertas/cristales/barreras/gemas), colliders (jugadores↔compuertas; Lumo disuelve cristales y Umbra las barreras; el otro queda bloqueado), overlaps de gemas (Lumo↔doradas, Umbra↔violetas), `updateSwitches` (recolecta botones pisados y palancas tocadas, actualiza `SwitchSystem` y cada compuerta con `cellOccupied`), contador `collectedGems`/`totalGems` mostrado en la etiqueta de debug.
+- `levels/04.json` (botón que Lumo mantiene para que Umbra cruce la compuerta), `05.json` (dos botones del mismo ID a ambos lados de una compuerta: se turnan para abrirse paso), `06.json` (cristales `c` y barreras `b` intercalados: Lumo disuelve, Umbra apaga, se alternan) y `07.json` (dos palancas y tres compuertas por ID, con orden de acciones reversible). `src/config/levels.ts` registra `04`-`07`.
+
+Decisiones de diseño (a documentar/confirmar):
+
+- **Corredor de 2 tiles** (filas 12 techo `#`, 13 libre, 14 pasillo, 15 piso, 16 piso) para los niveles 4-7: como el personaje salta ~3 tiles, un techo en la fila 12 impide saltar por encima de compuertas/cristales/barreras de 1 tile.
+- **Compuerta abierta sin colisión:** al retraerse 1 tile, la compuerta comparte el tile superior con la cabeza del personaje (hitbox 40 px en un corredor de 2 tiles); por eso `Gate` **desactiva su cuerpo al quedar totalmente abierta** (leve desvío de A5 "sólido mientras existe", necesario para no hundir al jugador en el piso). Se re-habilita al empezar a cerrarse.
+- La etiqueta de debug ahora muestra `nivel · modo · gemas X/Y` y se refresca cada frame.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run typecheck` | en verde |
+| `npm test` | 74/74 tests en verde (9 archivos) |
+| `npm run validate-levels` | en verde (7 niveles válidos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+
+Pendiente humano:
+
+- [ ] Con `npm run dev`: en el nivel 04, pararse en el botón abre la compuerta y deja pasar al otro; soltarlo la cierra.
+- [ ] Nivel 04: la compuerta al cerrarse no aplasta ni atrapa a nadie (B9).
+- [ ] Nivel 05: se turnan usando los dos botones del mismo ID para abrir la compuerta desde cada lado.
+- [ ] Nivel 06: Lumo disuelve los cristales y Umbra las barreras; el bloque disuelto deja pasar al instante.
+- [ ] Nivel 07: las palancas son reversibles; el orden incorrecto agrega pasos pero no bloquea el nivel.
+- [ ] Gemas: cada personaje recoge solo las suyas (dorada Lumo, violeta Umbra).
+- [ ] Niveles 4-7 completables en modo un jugador (Tab).
+
+Nota Git: `feature/hito-4-botones-elementos`; cambios en working tree sin commitear (pendiente de autorización).
