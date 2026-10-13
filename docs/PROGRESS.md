@@ -10,8 +10,8 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 | 2. Movimiento | en curso | Pasos 1-3 hechos en `feature/hito-2-movimiento` (`levelParser`, jugadores + `test.json`, Tab + debug); Hito 2 listo salvo prueba manual humana |
 | 3. Peligros y puertas | completado | `rules.ts` + tests, pozos/abismo/puertas, muerte con reinicio, R y debug 1-8, `levels/01-03.json`; en `feature/hito-3-peligros-puertas`, listo salvo prueba manual humana |
 | 4. Botones y elementos | completado | Commit `2882077` en `feature/hito-4-botones-elementos` (push); listo salvo prueba manual humana |
-| 5. Pantallas y progreso | en curso | `scoring.ts`/`progress.ts` + tests, escenas Menu/LevelSelect/Result, HUD, pausa y HUD en `GameScene`; en `feature/hito-5-pantallas-progreso`; listo salvo prueba manual humana |
-| 6. Pulido y nivel final | pendiente | |
+| 5. Pantallas y progreso | completado | Commit `5557f18` (escenas Menu/LevelSelect/Result, HUD, pausa y progreso); listo salvo prueba manual humana |
+| 6. Pulido y nivel final | en curso | Juice, SFX por código, nivel `08` y build; en `feature/hito-6-pulido-nivel-final`; listo salvo prueba manual humana |
 
 ## Hito 1: Esqueleto
 
@@ -300,4 +300,49 @@ Pendiente humano:
 - [ ] El progreso y las estrellas persisten al recargar la página; los niveles se desbloquean en orden.
 - [ ] R reinicia el nivel con el cronómetro a 0; la muerte reinicia mostrando los 0,5 s de pausa.
 
-Nota Git: `feature/hito-5-pantallas-progreso`; cambios en working tree sin commitear (pendiente de autorización).
+Nota Git: `feature/hito-5-pantallas-progreso`; commit `5557f18` (HUD, selector de niveles y número de jugadores).
+
+## Hito 6: Pulido y nivel final
+
+Rama: `feature/hito-6-pulido-nivel-final`.
+
+Hecho:
+
+- `scripts/generate-sfx.ts` (nuevo): sintetizador estilo jsfxr en Node que genera por código los **5 efectos** en `public/sfx/*.wav` (PCM 16-bit mono 44.1 kHz): `jump`, `gem`, `button`, `death`, `victory`. Script npm `generate-sfx`.
+- `src/config/audio.ts` (nuevo): claves `SFX_KEYS`, `SFX_FILES` (rutas) y `SFX_VOLUME`; solo los 5 eventos del documento tienen sonido.
+- `src/fx/sfx.ts` (nuevo): `playSfx(scene, key)`; nunca lanza (si falta el recurso o el audio no está, el juego sigue).
+- `src/fx/particles.ts` (nuevo): `createTrail` (rastro) y `deathBurst` (explosión de muerte).
+- `src/fx/transitions.ts` (nuevo): `fadeIn` y `fadeOutThen` (fundido entre escenas con el color de fondo).
+- `src/config/textures.ts`: clave de textura `spark`.
+- `src/scenes/BootScene.ts`: `preload` carga los `SFX_FILES`; nueva `generateSparkTexture` (partícula 8×8 blanca para tintar).
+- `src/objects/Player.ts`: squash & stretch (salto 0.85/1.15, aterrizaje 1.18/0.82 sólo si la caída supera 120 px/s) manteniendo los pies en el suelo (offset del body por escala), sonido de salto y `depth` 20.
+- `src/objects/Door.ts`: brillo con **Filters Glow** de Phaser 4 (WebGL) que se activa/desactiva con `setLit`; alpha tenue cuando apagada.
+- `src/objects/Button.ts`: getter `isPressed` para detectar el borde de presión.
+- `src/scenes/GameScene.ts`: rastros (destellos de Lumo, humo de Umbra) que se pausan con el overlay de pausa; SFX de salto/gema/botón/muerte/victoria; explosión de partículas del color del personaje + `shake(150, 0.012)` al morir; fundido de entrada al nivel y de salida hacia el resultado.
+- `src/scenes/MenuScene.ts`, `LevelSelectScene.ts`, `ResultScene.ts`: `fadeIn` al abrir.
+- `levels/08.json`: "Las ruinas", nivel final (`timeTarget: 60`); combina pozos de luz/sombra, abismo, cristal, barrera, dos botones + compuerta (rojo), palanca + compuerta (azul) y 4 gemas. Corredor de 2 tiles con techo en las columnas 13-25 (para que no se pueda saltar compuertas/cristales), con cielo abierto sobre los pozos y el abismo para saltarlos con holgura. `src/config/levels.ts` registra `08`.
+- `tests/sfx.test.ts` (nuevo): los 5 `.wav` existen y son contenedores RIFF/WAVE.
+
+Decisiones de diseño / notas:
+
+- **SFX por código** (elección del usuario): los `.wav` se generan con Node y se versionan en `public/sfx/`.
+- Ruta del nivel 08 en modo un jugador (según B10, las palancas son reversibles): Lumo cruza su pozo de luz y salta el de sombra; Umbra al revés; ambos saltan el abismo (techo abierto). Botones del mismo ID a ambos lados de la compuerta (col 13 y 18) para turnarse; luego el cristal (col 20, Lumo) y la barrera (col 22, Umbra) obligan a alternar; la palanca (col 23) abre la compuerta final (col 25) y, si el segundo personaje la re-alterna, se recupera saliendo y volviendo a entrar (sin deadlock, B10).
+- El rastro de partículas se pausa junto con física y tweens (B1).
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run generate-sfx` | genera los 5 `.wav` en `public/sfx/` |
+| `npm run typecheck` | en verde |
+| `npm test` | 96/96 tests en verde (12 archivos) |
+| `npm run validate-levels` | en verde (8 niveles válidos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente); `dist/sfx/*.wav` presentes |
+| `npm run dev` | HTTP 200 en `/`, `GameScene.ts` y `sfx/jump.wav` |
+
+Pendiente humano:
+
+- [ ] `npm run preview` sin errores en consola; los 8 niveles completables en modo un jugador.
+- [ ] Juice: rastro de partículas en ambos personajes, squash & stretch al saltar/aterrizar, explosión + screen shake al morir, brillo de las puertas al pisarlas, fundido entre escenas.
+- [ ] Sonido: salto, gema, botón, muerte y victoria suenan; el resto no; el botón de silencio de la pausa funciona.
+- [ ] Nivel 08 jugable de principio a fin en modo un jugador (ruta descrita arriba) y la estrella de tiempo alcanzable.

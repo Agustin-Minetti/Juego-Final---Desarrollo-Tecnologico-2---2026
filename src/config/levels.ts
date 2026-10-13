@@ -5,6 +5,7 @@ import level04 from '../../levels/04.json?raw';
 import level05 from '../../levels/05.json?raw';
 import level06 from '../../levels/06.json?raw';
 import level07 from '../../levels/07.json?raw';
+import level08 from '../../levels/08.json?raw';
 
 /** Niveles de la progresión disponibles (Hito 4: 01-07). */
 export const LEVELS: Readonly<Record<string, string>> = {
@@ -15,6 +16,7 @@ export const LEVELS: Readonly<Record<string, string>> = {
   '05': level05,
   '06': level06,
   '07': level07,
+  '08': level08,
 };
 
 export type LevelId = keyof typeof LEVELS;

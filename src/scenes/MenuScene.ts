@@ -1,6 +1,7 @@
 import Phaser from 'phaser';
 import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
+import { fadeIn } from '../fx/transitions';
 import { createButton } from './ui';
 
 export class MenuScene extends Phaser.Scene {
@@ -34,5 +35,7 @@ export class MenuScene extends Phaser.Scene {
     createButton(this, cx, GAME_HEIGHT * 0.62 + 70, 'Dos jugadores', () =>
       this.scene.start('LevelSelect', { mode: 'two-player' }),
     );
+
+    fadeIn(this);
   }
 }

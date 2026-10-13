@@ -1,10 +1,14 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config/colors';
+import { SFX_KEYS } from '../config/audio';
+import { COLORS, colorToNumber } from '../config/colors';
 import { isDebugMode } from '../config/debug';
 import { TILE_SIZE } from '../config/game';
 import { KEY_CODES } from '../config/keys';
 import { DEFAULT_LEVEL, hasLevel, LEVELS, levelIds } from '../config/levels';
 import { TEXTURE_KEYS } from '../config/textures';
+import { createTrail, deathBurst } from '../fx/particles';
+import { playSfx } from '../fx/sfx';
+import { fadeIn, fadeOutThen } from '../fx/transitions';
 import {
   createControlState,
   schemeFor,
@@ -81,6 +85,7 @@ export class GameScene extends Phaser.Scene {
   private crystals: Crystal[] = [];
   private barriers: Barrier[] = [];
   private gems: Gem[] = [];
+  private trails: Phaser.GameObjects.Particles.ParticleEmitter[] = [];
   private switchSystem = new SwitchSystem();
   private collectedGems = 0;
   private totalGems = 0;
@@ -111,6 +116,7 @@ export class GameScene extends Phaser.Scene {
     this.crystals = [];
     this.barriers = [];
     this.gems = [];
+    this.trails = [];
     this.collectedGems = 0;
     this.totalGems = 0;
   }
@@ -184,6 +190,11 @@ export class GameScene extends Phaser.Scene {
 
     this.createHud();
     this.createPauseOverlay();
+
+    this.trails.push(createTrail(this, this.lumo, 'spark'));
+    this.trails.push(createTrail(this, this.umbra, 'smoke'));
+
+    fadeIn(this);
 
     if (isDebugMode()) {
       this.modeLabel = this.add
@@ -260,9 +271,11 @@ export class GameScene extends Phaser.Scene {
     if (this.paused) {
       this.physics.pause();
       this.tweens.pauseAll();
+      this.trails.forEach((trail) => trail.pause());
     } else {
       this.physics.resume();
       this.tweens.resumeAll();
+      this.trails.forEach((trail) => trail.resume());
     }
     this.pauseOverlay?.setVisible(this.paused);
   }
@@ -348,6 +361,7 @@ export class GameScene extends Phaser.Scene {
     }
     gem.collect();
     this.collectedGems++;
+    playSfx(this, SFX_KEYS.gem);
   }
 
   private updateSwitches(): void {
@@ -356,6 +370,9 @@ export class GameScene extends Phaser.Scene {
     const pressed = new Set<string>();
     for (const button of this.buttons) {
       const isPressed = players.some((player) => button.isPlayerStanding(player));
+      if (isPressed && !button.isPressed) {
+        playSfx(this, SFX_KEYS.button);
+      }
       button.setPressed(isPressed);
       if (isPressed) {
         pressed.add(button.id);
@@ -428,15 +445,15 @@ export class GameScene extends Phaser.Scene {
     this.hudTime?.setText(formatTime(this.elapsedMs));
     this.hudGems?.setText(`${this.collectedGems}/${this.totalGems}`);
 
-    const diedThisFrame = this.checkDeaths();
+    const deadPlayers = this.collectDeaths();
     const lumoLit = !!this.lumo && this.doorLumo?.isPlayerStanding(this.lumo) === true;
     const umbraLit = !!this.umbra && this.doorUmbra?.isPlayerStanding(this.umbra) === true;
     this.doorLumo?.setLit(lumoLit);
     this.doorUmbra?.setLit(umbraLit);
 
-    const outcome = resolveOutcome(diedThisFrame, lumoLit && umbraLit);
+    const outcome = resolveOutcome(deadPlayers.length > 0, lumoLit && umbraLit);
     if (outcome === 'death') {
-      this.onDeath();
+      this.onDeath(deadPlayers);
     } else if (outcome === 'victory') {
       this.onVictory();
     }
@@ -444,15 +461,15 @@ export class GameScene extends Phaser.Scene {
     this.modeLabel?.setText(this.modeLabelText());
   }
 
-  private checkDeaths(): boolean {
-    let died = false;
+  private collectDeaths(): Player[] {
+    const dead: Player[] = [];
     if (this.lumo && this.touchesLethal(this.lumo, 'lumo')) {
-      died = true;
+      dead.push(this.lumo);
     }
     if (this.umbra && this.touchesLethal(this.umbra, 'umbra')) {
-      died = true;
+      dead.push(this.umbra);
     }
-    return died;
+    return dead;
   }
 
   private touchesLethal(player: Player, character: ControlledPlayer): boolean {
@@ -468,15 +485,24 @@ export class GameScene extends Phaser.Scene {
     return [...touchedPits, ...touchedAbyss].some((hazard) => diesIn(character, hazard));
   }
 
-  private onDeath(): void {
+  private onDeath(deadPlayers: Player[]): void {
     this.status = 'dead';
     this.physics.pause();
+    this.trails.forEach((trail) => trail.stop());
+    for (const player of deadPlayers) {
+      const color = player.texture.key === TEXTURE_KEYS.lumo ? COLORS.lumo : COLORS.umbra;
+      deathBurst(this, player.x, player.y, colorToNumber(color));
+    }
+    this.cameras.main.shake(150, 0.012);
+    playSfx(this, SFX_KEYS.death);
     this.time.delayedCall(DEATH_PAUSE_MS, () => this.restartLevel(this.levelId));
   }
 
   private onVictory(): void {
     this.status = 'won';
     this.physics.pause();
+    this.trails.forEach((trail) => trail.stop());
+    playSfx(this, SFX_KEYS.victory);
 
     const ids = levelIds();
     const index = Math.max(0, ids.indexOf(this.levelId));
@@ -490,15 +516,17 @@ export class GameScene extends Phaser.Scene {
     const storage = browserStorage();
     saveProgress(storage, recordResult(loadProgress(storage), this.levelId, index, score.stars, ids.length));
 
-    this.scene.start('Result', {
-      levelId: this.levelId,
-      levelIndex: index,
-      mode: this.controlState.mode,
-      elapsedMs: this.elapsedMs,
-      gemsCollected: this.collectedGems,
-      totalGems: this.totalGems,
-      score,
-    });
+    fadeOutThen(this, () =>
+      this.scene.start('Result', {
+        levelId: this.levelId,
+        levelIndex: index,
+        mode: this.controlState.mode,
+        elapsedMs: this.elapsedMs,
+        gemsCollected: this.collectedGems,
+        totalGems: this.totalGems,
+        score,
+      }),
+    );
   }
 
   private restartLevel(levelId: string): void {

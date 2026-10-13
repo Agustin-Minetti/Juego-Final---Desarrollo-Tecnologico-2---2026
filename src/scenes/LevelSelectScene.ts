@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
 import { levelIds } from '../config/levels';
+import { fadeIn } from '../fx/transitions';
 import { controlStateForMode, type ControlMode } from '../logic/controlMode';
 import { browserStorage, isLevelUnlocked, loadProgress, MAX_STARS, starsFor } from '../logic/progress';
 import { createButton } from './ui';
@@ -67,5 +68,7 @@ export class LevelSelectScene extends Phaser.Scene {
       height: 40,
       fontSize: 16,
     });
+
+    fadeIn(this);
   }
 }
