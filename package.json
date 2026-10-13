@@ -9,7 +9,8 @@
     "preview": "vite preview",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
-    "validate-levels": "node scripts/validate-levels.ts"
+    "validate-levels": "node scripts/validate-levels.ts",
+    "generate-sfx": "node scripts/generate-sfx.ts"
   },
   "dependencies": {
     "phaser": "4.2.1"

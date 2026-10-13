@@ -14,6 +14,7 @@ export const TEXTURE_KEYS = {
   gemViolet: 'gemViolet',
   crystal: 'crystal',
   barrier: 'barrier',
+  spark: 'spark',
 } as const;
 
 export type TextureKey = (typeof TEXTURE_KEYS)[keyof typeof TEXTURE_KEYS];

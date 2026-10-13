@@ -1,4 +1,5 @@
 import Phaser from 'phaser';
+import { SFX_FILES } from '../config/audio';
 import { COLORS } from '../config/colors';
 import { TILE_SIZE } from '../config/game';
 import { TEXTURE_KEYS } from '../config/textures';
@@ -10,6 +11,12 @@ function hex(color: string): number {
 export class BootScene extends Phaser.Scene {
   constructor() {
     super('Boot');
+  }
+
+  preload(): void {
+    for (const sfx of SFX_FILES) {
+      this.load.audio(sfx.key, sfx.path);
+    }
   }
 
   create(): void {
@@ -25,6 +32,7 @@ export class BootScene extends Phaser.Scene {
     this.generateGemTextures();
     this.generateCrystalTexture();
     this.generateBarrierTexture();
+    this.generateSparkTexture();
     this.scene.start('Menu');
   }
 
@@ -182,6 +190,18 @@ export class BootScene extends Phaser.Scene {
       gfx.lineBetween(i, 2, i, TILE_SIZE - 2);
     }
     gfx.generateTexture(TEXTURE_KEYS.barrier, TILE_SIZE, TILE_SIZE);
+    gfx.destroy();
+  }
+
+  private generateSparkTexture(): void {
+    const size = 8;
+    const c = size / 2;
+    const gfx = this.add.graphics();
+    gfx.fillStyle(0xffffff, 0.4);
+    gfx.fillCircle(c, c, 4);
+    gfx.fillStyle(0xffffff, 1);
+    gfx.fillCircle(c, c, 2);
+    gfx.generateTexture(TEXTURE_KEYS.spark, size, size);
     gfx.destroy();
   }
 }

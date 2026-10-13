@@ -1,26 +1,30 @@
 import Phaser from 'phaser';
+import { COLORS, colorToNumber } from '../config/colors';
 import { TEXTURE_KEYS } from '../config/textures';
-import { isStandingOn, type Character } from '../logic/rules';
+import { isStandingOn } from '../logic/rules';
 
 const UNLIT_ALPHA = 0.45;
 const LIT_ALPHA = 1;
 
-/**
- * Puerta de salida de un personaje. Es sólida y se gana con el personaje
- * "encima" (cara inferior de los pies en contacto con la cara superior),
- * según DESIGN → Mecánicas > Elementos del nivel.
- */
-export class Door extends Phaser.Physics.Arcade.Image {
-  readonly character: Character;
+export class Door extends Phaser.Physics.Arcade.Sprite {
+  readonly character: 'lumo' | 'umbra';
   private lit = false;
+  private glow?: Phaser.Filters.Glow;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, character: Character) {
+  constructor(scene: Phaser.Scene, x: number, y: number, character: 'lumo' | 'umbra') {
     const key = character === 'lumo' ? TEXTURE_KEYS.doorLumo : TEXTURE_KEYS.doorUmbra;
     super(scene, x, y, key);
     this.character = character;
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
     this.setAlpha(UNLIT_ALPHA);
+
+    if (scene.game.renderer.type === Phaser.WEBGL) {
+      this.enableFilters();
+      const color = character === 'lumo' ? COLORS.lumo : COLORS.umbra;
+      this.glow = this.filters?.internal.addGlow(colorToNumber(color), 4, 0, 1);
+      this.glow?.setActive(false);
+    }
   }
 
   isPlayerStanding(player: Phaser.Physics.Arcade.Sprite): boolean {
@@ -46,5 +50,6 @@ export class Door extends Phaser.Physics.Arcade.Image {
     }
     this.lit = lit;
     this.setAlpha(lit ? LIT_ALPHA : UNLIT_ALPHA);
+    this.glow?.setActive(lit);
   }
 }

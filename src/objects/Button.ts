@@ -36,6 +36,10 @@ export class Button extends Phaser.GameObjects.Image {
     );
   }
 
+  get isPressed(): boolean {
+    return this.pressed;
+  }
+
   setPressed(pressed: boolean): void {
     if (pressed === this.pressed) {
       return;

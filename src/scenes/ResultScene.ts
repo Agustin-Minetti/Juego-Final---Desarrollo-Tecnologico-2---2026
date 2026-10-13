@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
 import { levelIds } from '../config/levels';
+import { fadeIn } from '../fx/transitions';
 import { controlStateForMode, type ControlMode } from '../logic/controlMode';
 import { MAX_STARS } from '../logic/progress';
 import { formatTime, type LevelScore } from '../logic/scoring';
@@ -97,5 +98,7 @@ export class ResultScene extends Phaser.Scene {
         fontSize: 16,
       });
     });
+
+    fadeIn(this);
   }
 }
