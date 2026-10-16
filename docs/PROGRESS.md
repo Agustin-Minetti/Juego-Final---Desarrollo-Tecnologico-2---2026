@@ -346,3 +346,99 @@ Pendiente humano:
 - [ ] Juice: rastro de partículas en ambos personajes, squash & stretch al saltar/aterrizar, explosión + screen shake al morir, brillo de las puertas al pisarlas, fundido entre escenas.
 - [ ] Sonido: salto, gema, botón, muerte y victoria suenan; el resto no; el botón de silencio de la pausa funciona.
 - [ ] Nivel 08 jugable de principio a fin en modo un jugador (ruta descrita arriba) y la estrella de tiempo alcanzable.
+
+## Rediseño de niveles (post-Hito 6)
+
+Rama: `feature/rediseno-niveles`.
+
+Hecho:
+
+- `levels/01.json` … `08.json` reescritos al estilo **multinivel** (plataformas a distintas alturas, escaleras, desniveles y puerta de salida sobre una plataforma elevada). Se conservan los elementos y la progresión de mecánicas (pozos, abismo, compuertas, cristal/barrera, palancas; nivel 8 combina todo).
+- **Primera compuerta cooperativa** (dos botones del mismo ID, uno a cada lado) en el nivel **1** (antes aparecía en el 4). Decisión N2 en `DESIGN.md`.
+- **Anti-salto**: cada compuerta lleva un **lintel** de 3 tiles (filas 10-12) centrado en su columna; el tramo de cristal/barrera del nivel 6 va **bajo techo** (fila 12, cols 5-22). Ninguna plataforma cercana queda a distancia de salto de un lintel. Decisión N3.
+- Grillas verificadas a mano contra la física (salto ≈ 96 px = 3 tiles de alto, ≈ 160 px ≈ 5 tiles de ancho): cada escalón sube ≤ 2 tiles y cada hueco saltable mide ≤ 4 tiles.
+- Constantes de posicionamiento respetadas: piso en fila 15 (fila 16 base), fila 14 de caminata, fila 13 para plataformas/puerta elevada; botones en `y:15` con 2 tiles libres encima; compuertas en `y:14` con `grid[y-1][x] === '.'`.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run validate-levels` | en verde (8 niveles válidos) |
+| `npm run typecheck` | en verde |
+| `npm test` | 96/96 tests en verde (12 archivos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+
+Pendiente humano:
+
+- [ ] Jugar los 8 niveles en modo un jugador (Tab) y confirmar que son completables y que la dificultad progresa.
+- [ ] Confirmar la estrella de tiempo (objetivos: 40/50/55/55/45/50/55/65 s) jugando.
+- [ ] Verificar que ninguna compuerta se puede saltar por arriba (lintel/techo) y que ninguna plataforma permite saltar sobre un lintel cercano.
+
+Nota Git: `feature/rediseno-niveles` (sin commitear todavía).
+
+### Rediseño a pantalla completa de los niveles 01-04
+
+Hecho:
+
+- `levels/01.json` … `04.json` reescritos para **llenar las 30 × 17 celdas** (una sola pantalla fija, `Scale.FIT`) con un **arquetipo distinto por nivel**; los niveles **05-08 se dejan como están** por ahora. Decisión N5 en `DESIGN.md`.
+- **01 — torre cooperativa:** subida en zigzag por repisas de 5 tiles (escalones de 2 tiles que no comparten columnas, para dejar los 2 tiles libres que exige la hitbox) hasta la cima; una compuerta cooperativa (rojo) con **dos botones del mismo ID**, uno a cada lado de un **muro central completo (col. 5, filas 0-12)**. Sin peligros.
+- **02 — pozos:** pozos de luz y de sombra en el piso (a cielo abierto) y en repisas elevadas; el muro de la compuerta cooperativa (col. 13) obliga a cruzar los pozos antes y después del ascenso.
+- **03 — abismo:** un **abismo de 10 tiles de ancho × 2 de profundidad** corta el piso; se cruza por repisas colgantes a media altura entre dos torres (izquierda con el spawn, derecha con las puertas). Sin compuerta: ambos deben hacer la travesía.
+- **04 — compuertas encadenadas:** **dos compuertas** (rojo col. 7, azul col. 15) separan tres secciones con **muros completos (filas 0-12)**; cada compuerta tiene dos botones del mismo ID, uno a cada lado. Secuencia cooperativa: se mantiene el botón para que pase el otro y se turnan dos veces; luego ascenso hasta las puertas.
+- **Anti-salto por muro completo (N6):** en 01, 02 y 04 la compuerta vive en una **columna de muro de filas 0-12**; la fila 13 queda libre como tile de retracción (`levelParser` exige `grid[y-1][x] === '.'`). Como la hitbox (40 px) solo llega a la fila 13 al estar parado, el personaje no puede saltar por encima de la compuerta.
+- **Coop en 1P:** el personaje inactivo (Tab) sigue con física activa y **mantiene el botón pisado** mientras el activo pasa, tal como exige el modo un jugador.
+
+Verificación de alcance: se usó un **checker de alcanzabilidad** (BFS sobre nodos "standing" con reglas conservadoras de salto de ≤5 tiles de ancho y ≤2 de alto, y caídas de hasta 4; los pozos se modelan letales y las compuertas como abiertas). Resultado: en los cuatro niveles Lumo y Umbra alcanzan **su puerta y sus 4 gemas** (01: 53 nodos; 02: 52; 03: 47; 04: 55). El checker está en archivo temporal, **no** se commitea.
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run validate-levels` | en verde (8 niveles válidos) |
+| `npm run typecheck` | en verde |
+| `npm test` | 96/96 tests en verde (12 archivos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+
+Pendiente humano:
+
+- [ ] Jugar los niveles 01-04 en modo un jugador (Tab) y confirmar que se sienten bien, que la compuerta cooperativa exige turnarse y que el ascenso usa toda la pantalla.
+- [ ] Confirmar que no se puede saltar ninguna compuerta por arriba ni rodearla por los lados (muro completo).
+- [ ] Revisar los `timeTarget` nuevos (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) jugando; ajustar si la estrella de tiempo queda inalcanzable.
+- [ ] Decidir si los niveles 05-08 se rediseñan con el mismo criterio de pantalla completa (N5, pendiente).
+
+### Corrección de pasabilidad 01-04 (con simulador de física real)
+
+El checker anterior de alcanzabilidad **no modelaba colisiones laterales ni techos**, así que dio por buenos saltos imposibles. Se reemplazó por un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, corte por techo y colisión lateral) integrado en el mismo BFS de "nodos de pie". Al pasar los 4 niveles por el simulador, **01-04 resultaron NO pasables** (puertas inalcanzables): el primer rediseño tenía plataformas justo encima del arco de salto (el personaje golpeaba el techo y caía) y plataformas pegadas a muros.
+
+Hecho:
+
+- `levels/01.json` … `04.json` reescritos con **escaleras diagonales limpias**: cada escalón sube 2 filas y avanza 3-4 columnas, sin plataformas superpuestas sobre la trayectoria del salto ni pegadas a muros. Se conserva la mecánica de cada nivel (compuerta cooperativa, pozos, abismo, dos compuertas).
+- Geometría resultante (verificada por el simulador): **01** puertas fila 7 (torre diagonal + compuerta cooperativa al pie); **02** puertas fila 9 (pozos de luz/sombra en el piso: `pp` cols 9-10, `ss` cols 13-14, cada uno cruza el suyo y salta el del otro); **03** puertas fila 11 (abismo de 10 tiles cruzado por escalones sobre el vacío); **04** puertas fila 11 (dos compuertas rojo/azul en columnas de muro completas, con dos botones cada una).
+- Se prioriza la **pasabilidad** por encima de llenar toda la pantalla (decisión N7 en `DESIGN.md`); puede quedar la parte superior libre.
+- `DESIGN.md` actualizado: *Niveles* (regla de pasabilidad, descripción del nivel 1) y *Decisiones de diseño* (N6b corregido, N7 nuevo).
+
+Verificación (simulador): los cuatro niveles, ambos personajes alcanzan **su puerta y sus 4 gemas** por salto/gravedad:
+
+| Nivel | Lumo | Umbra |
+| --- | --- | --- |
+| 01 | puerta ✓, 2 doradas ✓ | puerta ✓, 2 violetas ✓ |
+| 02 | puerta ✓, 2 doradas ✓ | puerta ✓, 2 violetas ✓ |
+| 03 | puerta ✓, 2 doradas ✓ | puerta ✓, 2 violetas ✓ |
+| 04 | puerta ✓, 2 doradas ✓ | puerta ✓, 2 violetas ✓ |
+
+Verificaciones del proyecto:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run validate-levels` | en verde (8 niveles válidos) |
+| `npm run typecheck` | en verde |
+| `npm test` | 96/96 tests en verde (12 archivos) |
+| `npm run build` | OK (warning de chunk >500 kB por Phaser, preexistente) |
+
+Pendiente humano:
+
+- [ ] Jugar 01-04 en modo un jugador (Tab): confirmar que se sienten bien, que la compuerta cooperativa exige turnarse y que ya no hay saltos imposibles.
+- [ ] Confirmar que no se puede saltar ninguna compuerta por arriba ni rodearla por los lados (muro completo).
+- [ ] Revisar los `timeTarget` (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) jugando; ajustar si la estrella de tiempo queda inalcanzable.
+
+Nota: el simulador está en un archivo temporal, **no** se commitea.

@@ -157,16 +157,20 @@ Asignación de gemas: **dorada (`d`) = Lumo**, **violeta (`v`) = Umbra**. Un per
 
 ### Progresión de los 8 niveles
 
-1. **Primeros pasos:** moverse, saltar, llegar a las puertas. Sin peligros.
-2. **No toques eso:** pozos de luz y de sombra; cada uno cruza el suyo.
-3. **Cuidado los dos:** aparece el abismo.
-4. **Mantenelo apretado:** un botón que uno pisa para abrirle paso al otro.
-5. **Ida y vuelta:** botones cruzados; se turnan para avanzar.
-6. **Disolver y apagar:** cristales oscuros y barreras de luz.
-7. **Palancas:** cambios permanentes y orden de acciones. Las palancas son reversibles (se pueden re-alternar): el orden incorrecto agrega pasos o cambia el camino, pero **nunca** deja el nivel sin resolver (sin deadlock).
-8. **Las ruinas:** combina todo; nivel más largo.
+Los niveles son **multinivel**: combinan plataformas a distintas alturas, escaleras y desniveles, además de los peligros y elementos de cada tramo. La puerta de salida suele estar sobre una plataforma elevada. Las compuertas y los bloques que deben bloquear el paso llevan encima un bloque sólido (lintel/techo) que impide saltarlos por arriba.
 
-Los niveles los propone el agente, pero cada uno tiene que pasar la prueba jugando en modo un jugador antes de darlo por cerrado.
+Los niveles **1 a 4** son pantallas multinivel (30 × 17 tiles, 960 × 544), un arquetipo distinto por nivel, con el spawn abajo y las puertas de salida sobre una plataforma elevada, y **2 gemas doradas + 2 violetas** en repisas alcanzables. La geometría se somete a la **regla de pasabilidad**: cada escalón sube **≤2 tiles** y las plataformas a distinta altura se separan **≥2 tiles** para poder pasar/usar el arco de salto; además ninguna plataforma queda justo encima de la trayectoria de salto (evita techos que cortan el salto) ni pegada a un muro. El material de bloqueo (muro vertical completo en la columna de la compuerta) impide rodear la compuerta tanto por arriba como por los lados. Los niveles **5 a 8** conservan por ahora su diseño multinivel previo.
+
+1. **Primeros pasos:** **torre cooperativa** de subida en **escalera diagonal** (escalones de 2 tiles, sin plataformas superpuestas) hasta la cima; una compuerta cooperativa con dos botones del mismo ID (uno a cada lado de un muro) al pie, y sin peligros.
+2. **No toques eso:** pozos de luz y de sombra en el piso y en plataformas elevadas (las de peligro van a cielo abierto para poder saltarlas); cada uno cruza el suyo a pie y salta el del otro; compuerta cooperativa al final del ascenso.
+3. **Cuidado los dos:** el **abismo** corta la pantalla de lado a lado (2 tiles de profundidad) y se cruza por plataformas colgantes a media altura; ambos mueren al caer, así que el ascenso y la travesía son compartidos.
+4. **Mantenelo apretado:** **dos compuertas** (rojo y azul) en secciones separadas por muros; cada una con dos botones del mismo ID, uno a cada lado. Uno mantiene el botón mientras el otro pasa, y se turnan dos veces.
+5. **Ida y vuelta:** botones cruzados a cada lado de la compuerta; se turnan para avanzar, con plataformas intermedias.
+6. **Disolver y apagar:** cristales oscuros y barreras de luz alternados, en un tramo bajo techo.
+7. **Palancas:** cambios permanentes y orden de acciones. Las palancas son reversibles (se pueden re-alternar): el orden incorrecto agrega pasos o cambia el camino, pero **nunca** deja el nivel sin resolver (sin deadlock).
+8. **Las ruinas:** combina todo (pozos, compuerta cooperativa, cristal y barrera, palanca); nivel más largo.
+
+Los niveles los propone el agente, pero cada uno tiene que pasar la prueba jugando en modo un jugador antes de darlo por cerrado. Los niveles 01–04 se verificaron además con un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, techo y colisión lateral) que confirma que ambos spawns alcanzan sus puertas y sus 4 gemas por salto/gravedad.
 
 ## Estética, juice y sonido
 
@@ -387,3 +391,16 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | M10 | Criterio de los 8 niveles | Completabilidad probada en **modo un jugador**; la estrella de tiempo se verifica por **cálculo de rutas** (no hace falta que el agente baje el cronómetro jugando). |
 | M11 | Versiones en `package.json` | Se fijan **sin `^`**: `typescript 7.0.2`, `vite 8.3.3`, `vitest 5.0.3`, `@types/node 24.19.1` (Phaser ya estaba en 4.2.1). |
 | C1 | Duraciones (*Resumen* vs. *Plan*) | Se mantiene "7 a 10 días" y se aclara que el plan estima "8 días hábiles" dentro de ese rango. |
+
+### Resueltas — rediseño de niveles (post-Hito 6)
+
+| # | Ambigüedad | Decisión |
+| --- | --- | --- |
+| N1 | Niveles planos | Los 8 niveles se rediseñan **multinivel** (plataformas a distintas alturas, escaleras y desniveles) al estilo *Fireboy and Watergirl*, conservando los elementos y la progresión de mecánicas. |
+| N2 | Progresión de mecánicas | Se relaja: la **primera compuerta cooperativa** (dos botones del mismo ID, uno a cada lado) aparece en el nivel **1**, en vez de introducirse recién en el 4. |
+| N3 | Anti-salto de compuertas/bloques | Cada compuerta, y cada cristal/barrera que deba bloquear, lleva encima un bloque sólido (**lintel** o **techo/tramo bajo techo**) que impide saltarlo por arriba. Verificado por la geometría del salto (≈3 tiles de alto). |
+| N4 | Cajas y plataformas móviles | Siguen **fuera de alcance**; el rediseño no las introduce. |
+| N5 | Uso de la pantalla | Los niveles **1 a 4** se rediseñan para **llenar las 30 × 17 celdas** en ancho y alto (una sola pantalla, `Scale.FIT`, sin scroll) y **variar el arquetipo por nivel** (torre, pozos, abismo, compuertas encadenadas). Los niveles 5-8 quedan pendientes de revisión con el mismo criterio. |
+| N6 | Bloqueo de compuertas cooperativas | El muro que aloja la compuerta ocupa la **columna completa (filas 0-12)**, de modo que no se puede rodear la compuerta ni por arriba ni por los lados; la fila 13 queda libre como tile de retracción (la exige `levelParser`). |
+| N6b | Verificación de alcance | Para los niveles 1-4 se comprobó con un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, techo y colisión lateral) que ambos spawns alcanzan sus puertas y sus 4 gemas. El checker anterior (sin colisión lateral) daba falsos positivos; el simulador detectó que el primer rediseño de 01-04 no era pasable (techos de plataformas sobre el arco de salto y plataformas pegadas a muros). Los niveles 5–8 quedan pendientes de ese pase. |
+| N7 | Pasabilidad por encima del llenado de pantalla | Ante el conflicto entre "llenar las 30 × 17 celdas" y una geometría saltable, se **prioriza la pasabilidad**: escalones de **≤2 tiles** de altura y **≤4 tiles** de ancho, sin plataformas superpuestas sobre la trayectoria del salto. Puede quedar la parte superior libre. Los `timeTarget` (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) quedan a revisar jugando. |
