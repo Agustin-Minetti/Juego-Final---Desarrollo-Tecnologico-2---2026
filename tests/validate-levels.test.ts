@@ -114,13 +114,13 @@ describe('validateLevel', () => {
     expect(errors.join('\n')).toContain(`"x" debe ser un entero entre 0 y ${GRID_COLS - 1}`);
   });
 
-  it('exige que cada compuerta tenga tile libre arriba', () => {
+  it('exige que cada compuerta tenga arriba un dintel o un tile libre', () => {
     const grid = Array.from({ length: GRID_ROWS }, () => '.'.repeat(GRID_COLS));
     place(grid, 0, 0, 'L');
     place(grid, 1, 0, 'U');
     place(grid, 2, 0, 'l');
     place(grid, 3, 0, 'u');
-    place(grid, 5, 5, '#');
+    place(grid, 5, 5, 'p');
     const errors = validateLevel(
       JSON.stringify({
         timeTarget: 45,
@@ -132,15 +132,81 @@ describe('validateLevel', () => {
       }),
     );
     const joined = errors.join('\n');
-    expect(joined).toContain('compuerta en (5, 6) sin tile libre arriba');
-    expect(joined).toContain('compuerta en (0, 0) sin tile libre arriba');
+    expect(joined).toContain('compuerta en (5, 6) necesita arriba un dintel "#" o un tile libre "."');
+    expect(joined).toContain('compuerta en (0, 0) necesita arriba un dintel "#" o un tile libre "."');
   });
 
-  it('acepta una compuerta con tile libre arriba', () => {
+  it('acepta una compuerta con tile libre o dintel arriba', () => {
+    const grid = Array.from({ length: GRID_ROWS }, () => '.'.repeat(GRID_COLS));
+    place(grid, 0, 0, 'L');
+    place(grid, 1, 0, 'U');
+    place(grid, 2, 0, 'l');
+    place(grid, 3, 0, 'u');
+    place(grid, 8, 7, '#');
     const errors = validateLevel(
-      buildLevelJson({ entities: [{ type: 'gate', id: 'a', x: 5, y: 6 }] }),
+      JSON.stringify({
+        timeTarget: 45,
+        grid,
+        entities: [
+          { type: 'gate', id: 'a', x: 5, y: 6 },
+          { type: 'button', id: 'a', x: 8, y: 7 },
+        ],
+      }),
     );
     expect(errors).toEqual([]);
+  });
+
+  it('exige que botones y palancas estén sobre un piso "#"', () => {
+    const errors = validateLevel(
+      buildLevelJson({
+        entities: [
+          { type: 'gate', id: 'a', x: 5, y: 6 },
+          { type: 'button', id: 'a', x: 8, y: 7 },
+          { type: 'lever', id: 'a', x: 9, y: 7 },
+        ],
+      }),
+    );
+    const joined = errors.join('\n');
+    expect(joined).toContain('botón en (8, 7) no está sobre un piso "#"');
+    expect(joined).toContain('palanca en (9, 7) no está sobre un piso "#"');
+  });
+
+  it('exige que cada compuerta tenga quien la abra y viceversa', () => {
+    const grid = Array.from({ length: GRID_ROWS }, () => '.'.repeat(GRID_COLS));
+    place(grid, 0, 0, 'L');
+    place(grid, 1, 0, 'U');
+    place(grid, 2, 0, 'l');
+    place(grid, 3, 0, 'u');
+    place(grid, 8, 7, '#');
+    const errors = validateLevel(
+      JSON.stringify({
+        timeTarget: 45,
+        grid,
+        entities: [
+          { type: 'gate', id: 'rojo', x: 5, y: 6 },
+          { type: 'button', id: 'azul', x: 8, y: 7 },
+        ],
+      }),
+    );
+    const joined = errors.join('\n');
+    expect(joined).toContain('la compuerta "rojo" no tiene botón ni palanca con su ID');
+    expect(joined).toContain('el botón/palanca "azul" no controla ninguna compuerta');
+  });
+
+  it('acepta carteles de ayuda válidos y rechaza los inválidos', () => {
+    expect(validateLevel(buildLevelJson({ hints: [{ x: 4, y: 2, text: 'Hola' }] }))).toEqual([]);
+    const errors = validateLevel(
+      buildLevelJson({
+        hints: [
+          { x: 40, y: 2, text: 'fuera' },
+          { x: 1, y: 1, text: '' },
+        ],
+      }),
+    );
+    const joined = errors.join('\n');
+    expect(joined).toContain('hints[0]: "x" debe ser un entero entre 0 y');
+    expect(joined).toContain('hints[1]: "text" debe ser un texto de 1 a');
+    expect(validateLevel(buildLevelJson({ hints: 'nope' }))).toContain('"hints" debe ser un arreglo');
   });
 
   it('exige el arreglo entities', () => {

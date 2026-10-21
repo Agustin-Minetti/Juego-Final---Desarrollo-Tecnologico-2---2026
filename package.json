@@ -10,7 +10,8 @@
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "validate-levels": "node scripts/validate-levels.ts",
-    "generate-sfx": "node scripts/generate-sfx.ts"
+    "generate-sfx": "node scripts/generate-sfx.ts",
+    "solve-levels": "node scripts/solve-levels.mjs --atajos"
   },
   "dependencies": {
     "phaser": "4.2.1"

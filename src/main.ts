@@ -8,7 +8,7 @@ import { isDebugMode } from './config/debug';
 import { GAME_WIDTH, GAME_HEIGHT } from './config/game';
 import { GRAVITY } from './config/physics';
 
-new Phaser.Game({
+const game = new Phaser.Game({
   type: Phaser.AUTO,
   parent: 'game-container',
   backgroundColor: '#1a1626',
@@ -27,3 +27,8 @@ new Phaser.Game({
   },
   scene: [BootScene, MenuScene, LevelSelectScene, GameScene, ResultScene],
 });
+
+if (import.meta.env.DEV) {
+  // Gancho solo de desarrollo: deja que las capturas automáticas abran niveles.
+  Object.assign(window, { __lumoGame: game });
+}

@@ -1,5 +1,6 @@
 import Phaser from 'phaser';
 import { DISSOLVE_MS } from '../config/physics';
+import { deathBurst } from '../fx/particles';
 
 /**
  * Bloque sólido que se disuelve al contacto del personaje correcto
@@ -9,10 +10,15 @@ import { DISSOLVE_MS } from '../config/physics';
 export class Dissolvable extends Phaser.Physics.Arcade.Image {
   private solid = true;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+  /** Color de las partículas al disolverse. */
+  private readonly burstTint: number;
+
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string, burstTint: number) {
     super(scene, x, y, texture);
+    this.burstTint = burstTint;
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
+    this.setDepth(5);
   }
 
   get isSolid(): boolean {
@@ -26,6 +32,8 @@ export class Dissolvable extends Phaser.Physics.Arcade.Image {
     this.solid = false;
     const body = this.body as Phaser.Physics.Arcade.StaticBody;
     body.enable = false;
+    deathBurst(this.scene, this.x, this.y, this.burstTint, 12);
+    this.scene.tweens.killTweensOf(this);
     this.scene.tweens.add({
       targets: this,
       alpha: 0,

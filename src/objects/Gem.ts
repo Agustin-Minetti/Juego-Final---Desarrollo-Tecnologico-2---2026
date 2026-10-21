@@ -15,6 +15,16 @@ export class Gem extends Phaser.Physics.Arcade.Image {
     this.kind = kind;
     scene.add.existing(this);
     scene.physics.add.existing(this, true);
+    this.setDepth(9);
+    // flota suavemente (solo visual: el cuerpo estático no se mueve)
+    scene.tweens.add({
+      targets: this,
+      y: y - 3,
+      duration: 900 + Math.random() * 300,
+      yoyo: true,
+      repeat: -1,
+      ease: 'Sine.easeInOut',
+    });
   }
 
   get isCollected(): boolean {
@@ -28,6 +38,7 @@ export class Gem extends Phaser.Physics.Arcade.Image {
     this.collected = true;
     const body = this.body as Phaser.Physics.Arcade.StaticBody;
     body.enable = false;
+    this.scene.tweens.killTweensOf(this);
     this.scene.tweens.add({
       targets: this,
       alpha: 0,

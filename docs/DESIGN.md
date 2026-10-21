@@ -60,7 +60,7 @@ Parámetros de movimiento iniciales:
 | Jump buffer | 100 ms para registrar el salto apretado justo antes de tocar el piso |
 | Salto variable | Al soltar la tecla de salto estando en ascenso (`velocityY < 0`), se multiplica `velocityY` por 0.5. Si se mantiene, salto completo; si se suelta pronto, salto bajo. |
 
-Hitbox de ambos personajes: rectángulo de colisión de **24 × 40 px** (0,75 × 1,25 tiles), centrado en el sprite.
+Hitbox de ambos personajes: rectángulo de colisión de **20 × 26 px** (menos de 1 tile en ancho y alto), con los pies en el borde inferior del sprite (24 × 30 px). **Los dos pasan por huecos y pasillos de 1 tile** (32 px). Valores en `src/config/physics.ts` (`PLAYER_BODY_*`, `PLAYER_TEXTURE_*`).
 
 Colisión entre personajes: **Lumo y Umbra no colisionan entre sí**. Se ignoran mutuamente en la física; interactúan solo a través de botones, palancas, pozos, gemas y demás elementos del nivel.
 
@@ -86,7 +86,7 @@ El cristal oscuro y la barrera de luz son simétricos a propósito: cada persona
 
 Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que un personaje está **encima** de la puerta, o **pisando** el botón, cuando la **cara inferior del personaje está en contacto con la cara superior del elemento** (colisión de suelo clásica de plataformas, la que produce Arcade Physics con los colliders). Rozar el lateral del elemento no cuenta.
 
-**Compuertas:** bloque sólido mientras existe (no se atraviesan a medio abrir/cerrar). Abren deslizándose **hacia arriba**: se retraen en el tile superior y su hueco queda libre apenas comienza la apertura; requieren un tile libre arriba, que `validate-levels` verifica. Al cerrarse, si un personaje ocupa el tile destino, la compuerta **detiene el cierre** (se queda en su posición o se reabre) hasta que el tile quede libre: **nunca aplasta ni mata**. Criterio de "injusto" del checklist del Hito 4: una compuerta es injusta si (a) mata o aplasta a un personaje, o (b) deja a un personaje atrapado en un compartimento sin ningún switch o palanca alcanzable para reabrirlo.
+**Compuertas:** bloque sólido mientras existe (no se atraviesan a medio abrir/cerrar). Abren deslizándose **hacia arriba**: se retraen en el tile superior y su hueco queda libre apenas comienza la apertura. Arriba de cada compuerta tiene que haber un **dintel `#`** (compuerta de pasillo: al abrirse se esconde dentro del muro) o un **tile libre `.`** (compuerta usada como piso o puente: abierta queda translúcida en el aire); `validate-levels` lo verifica. Como los personajes caben en 1 tile, una compuerta de pasillo **nunca** puede tener un hueco libre arriba: el personaje pasaría por encima de la compuerta cerrada. Al cerrarse, si un personaje ocupa el tile destino, la compuerta **detiene el cierre** (se queda en su posición o se reabre) hasta que el tile quede libre: **nunca aplasta ni mata**. Criterio de "injusto" del checklist del Hito 4: una compuerta es injusta si (a) mata o aplasta a un personaje, o (b) deja a un personaje atrapado en un compartimento sin ningún switch o palanca alcanzable para reabrirlo.
 
 **Palancas:** cualquiera de los dos personajes puede accionarlas. Alternan **por borde de contacto**: al entrar en contacto con un personaje alternan una sola vez, y no vuelven a alternar mientras se mantenga el contacto; hay que salir y volver a entrar para alternar de nuevo. El estado es **permanente** en el sentido de que dura hasta que se vuelve a alternar la palanca (o hasta el reinicio del nivel, ver *Victoria, derrota y puntaje*).
 
@@ -149,36 +149,61 @@ Cada `levels/NN.json` tiene esta estructura:
 | `d` | Gema dorada (la recoge Lumo) |
 | `v` | Gema violeta (la recoge Umbra) |
 
-- **`entities`** (array): botones, palancas y compuertas, que necesitan **ID** para vincularse entre sí. Cada entidad tiene `type` (`button` \| `lever` \| `gate`), `id` (string compartido entre los elementos que se controlan entre sí) y `x` / `y` (columna y fila en la grilla, 0-based). Las compuertas se deslizan hacia arriba al abrirse (ver *Mecánicas > Elementos del nivel*).
+- **`entities`** (array): botones, palancas y compuertas, que necesitan **ID** para vincularse entre sí. Cada entidad tiene `type` (`button` \| `lever` \| `gate`), `id` (string compartido entre los elementos que se controlan entre sí) y `x` / `y` (columna y fila en la grilla, 0-based). Las compuertas se deslizan hacia arriba al abrirse (ver *Mecánicas > Elementos del nivel*). Los botones y palancas se ubican **sobre el tile de piso** que se pisa (`x`/`y` apuntan a un `#`). IDs con color propio: `rojo`, `azul`, `verde`, `amarillo`. Una compuerta también puede usarse como **piso** (por ejemplo, un puente sobre el abismo): cerrada se pisa; abierta deja un hueco.
+- **`hints`** (array, opcional): carteles de ayuda que se dibujan en el nivel, `{ "x": 4, "y": 2, "text": "..." }` (columna/fila de la esquina superior izquierda del texto, 1–80 caracteres). Se usan en los niveles que introducen una mecánica.
 
 Asignación de gemas: **dorada (`d`) = Lumo**, **violeta (`v`) = Umbra**. Un personaje que toca la gema del otro simplemente la ignora (no la recoge, no hay penalización).
 
-`validate-levels` valida los archivos `NN.json` (01–08): nombre, `timeTarget`, grilla 17×30, alfabeto permitido, exactamente un `L` y un `U`, exactamente una `l` y una `u`, coherencia de `entities` (tipos válidos, IDs no vacíos, coordenadas dentro de la grilla) y que cada compuerta tenga un tile libre arriba para deslizarse. El archivo `levels/test.json` del Hito 2 es un nivel de prueba **fuera de la progresión**: el validador lo ignora (no exige el patrón `NN.json` ni lo cuenta).
+`validate-levels` valida los archivos `NN.json` (01–08): nombre, `timeTarget`, grilla 17×30, alfabeto permitido, exactamente un `L` y un `U`, exactamente una `l` y una `u`, coherencia de `entities` (tipos válidos, IDs no vacíos, coordenadas dentro de la grilla), que cada compuerta tenga arriba un dintel `#` o un tile libre `.`, que botones y palancas estén sobre un piso `#`, que cada compuerta tenga un botón o palanca con su ID (y viceversa) y que los `hints` sean válidos.
+
+Además, `npm run solve-levels` (`scripts/solve-levels.mjs`) **resuelve** cada nivel: simula la física de Arcade (cuerpo 20 × 26, gravedad 1200, salto −480, velocidad 200, salto variable, techos, colisión lateral, pozos con margen de 2 px) y busca la secuencia cooperativa más corta (quién pisa qué botón, palancas, cristales y barreras). Lo corre dos veces: con la física normal y con una **conservadora** (salto −455, velocidad 190) para dejar margen. Informa si hay solución, cuántas gemas se alcanzan y si cada personaje podría llegar solo a su puerta (en los niveles cooperativos debe ser que no). Con `--atajos` (lo incluye `npm run solve-levels`) además **anula cada mecanismo por separado** (cada ID de botón/palanca, cada grupo de cristal y de barrera) y vuelve a resolver: si el nivel sigue teniendo solución sin ese botón o palanca, el puzzle **se puede saltear** y el comando falla. El archivo `levels/test.json` del Hito 2 es un nivel de prueba **fuera de la progresión**: el validador lo ignora (no exige el patrón `NN.json` ni lo cuenta).
 
 ### Progresión de los 8 niveles
 
-Los niveles son **multinivel**: combinan plataformas a distintas alturas, escaleras y desniveles, además de los peligros y elementos de cada tramo. La puerta de salida suele estar sobre una plataforma elevada. Las compuertas y los bloques que deben bloquear el paso llevan encima un bloque sólido (lintel/techo) que impide saltarlos por arriba.
+Cada nivel usa la pantalla completa (30 × 17) con un **arquetipo distinto** y enseña o combina una idea. Los niveles que presentan una mecánica traen carteles (`hints`). Reglas de construcción (verificadas con `solve-levels`):
 
-Los niveles **1 a 4** son pantallas multinivel (30 × 17 tiles, 960 × 544), un arquetipo distinto por nivel, con el spawn abajo y las puertas de salida sobre una plataforma elevada, y **2 gemas doradas + 2 violetas** en repisas alcanzables. La geometría se somete a la **regla de pasabilidad**: cada escalón sube **≤2 tiles** y las plataformas a distinta altura se separan **≥2 tiles** para poder pasar/usar el arco de salto; además ninguna plataforma queda justo encima de la trayectoria de salto (evita techos que cortan el salto) ni pegada a un muro. El material de bloqueo (muro vertical completo en la columna de la compuerta) impide rodear la compuerta tanto por arriba como por los lados. Los niveles **5 a 8** conservan por ahora su diseño multinivel previo.
+- **Saltos:** un escalón sube como máximo **2 tiles**; un hueco que se debe saltar mide como máximo **4 tiles**. Una plataforma no puede quedar 2 o 4 filas por encima del punto desde donde se salta (el techo corta el salto); 6 filas de separación es seguro.
+- **Lo que bloquea tiene que bloquear de verdad:** un pozo que el otro personaje no debe poder saltar mide **≥ 5 tiles**; un abismo que no se debe poder saltar mide **≥ 6 tiles** (con 5 se cruza parado en el borde). En pasillos de 2 tiles de alto no se puede saltar nada.
+- **Pozos sobre la cabeza:** un pozo del elemento contrario a menos de 6 filas por encima de donde camina un personaje lo mata al saltar (el contacto con la cara inferior también cuenta).
+- **Tamaño de los personajes:** caben en 1 tile, así que **cualquier hueco de 1 tile es un pasaje**. Lo que deba bloquear tiene que cerrar el hueco entero (muros, bloques macizos, cristales/barreras que tapen todo el pasillo).
+- **Compuertas:** dintel `#` justo arriba (la compuerta tapa todo el pasillo y al abrirse se esconde en el dintel); botones a los dos lados cuando hace falta volver. Las compuertas-puente (piso sobre el abismo) llevan aire arriba.
 
-1. **Primeros pasos:** **torre cooperativa** de subida en **escalera diagonal** (escalones de 2 tiles, sin plataformas superpuestas) hasta la cima; una compuerta cooperativa con dos botones del mismo ID (uno a cada lado de un muro) al pie, y sin peligros.
-2. **No toques eso:** pozos de luz y de sombra en el piso y en plataformas elevadas (las de peligro van a cielo abierto para poder saltarlas); cada uno cruza el suyo a pie y salta el del otro; compuerta cooperativa al final del ascenso.
-3. **Cuidado los dos:** el **abismo** corta la pantalla de lado a lado (2 tiles de profundidad) y se cruza por plataformas colgantes a media altura; ambos mueren al caer, así que el ascenso y la travesía son compartidos.
-4. **Mantenelo apretado:** **dos compuertas** (rojo y azul) en secciones separadas por muros; cada una con dos botones del mismo ID, uno a cada lado. Uno mantiene el botón mientras el otro pasa, y se turnan dos veces.
-5. **Ida y vuelta:** botones cruzados a cada lado de la compuerta; se turnan para avanzar, con plataformas intermedias.
-6. **Disolver y apagar:** cristales oscuros y barreras de luz alternados, en un tramo bajo techo.
-7. **Palancas:** cambios permanentes y orden de acciones. Las palancas son reversibles (se pueden re-alternar): el orden incorrecto agrega pasos o cambia el camino, pero **nunca** deja el nivel sin resolver (sin deadlock).
-8. **Las ruinas:** combina todo (pozos, compuerta cooperativa, cristal y barrera, palanca); nivel más largo.
+1. **Primeros pasos (torre y templo):** escalones para aprender a saltar, una gema de cada color en cada sector y un **muro con compuerta cooperativa** (botón a cada lado): uno pisa el botón y el otro pasa, después al revés. Escalera hasta el templo con las dos puertas.
+2. **No toques eso (carriles cruzados):** abajo, un **pozo de luz** de 6 tiles que solo cruza Lumo; arriba, un carril con **pozo de sombra** que solo cruza Umbra. En el centro se **cruzan**: Lumo sube al carril de luz de la derecha (su puerta) y Umbra baja al pozo de sombra (la suya). Sin cooperación obligatoria: es el nivel para aprender qué pisa cada uno.
+3. **Cuidado los dos (piedras sobre el abismo):** un abismo de 17 tiles. Lumo cruza saltando **piedras de luz** altas y Umbra **piedras de sombra** bajas (cada uno muere en las del otro). Al final, Lumo pisa un botón en su plataforma para abrirle a Umbra la compuerta de su puerta.
+4. **Mantenelo apretado (relevo arriba/abajo):** Lumo va por un camino alto (entrada de luz) y Umbra por un túnel bajo (entrada de sombra). **Tres compuertas en relevo**: el botón de cada uno abre el camino del otro (rojo → azul → verde).
+5. **Ida y vuelta (torres gemelas):** dos torres en zigzag separadas por un muro, cada una con 3 compuertas. **Los botones de cada torre abren las compuertas de la otra**, así que suben turnándose seis veces.
+6. **Disolver y apagar:** Lumo empieza **encerrado por una barrera de luz** que Umbra apaga; después Lumo disuelve el **muro de cristal** que frena a Umbra. Sobre el abismo, Lumo cruza un **puente de barreras** (si Umbra lo toca, lo apaga) y Umbra un **piso de cristal** (si Lumo lo toca, lo rompe). Cada puerta está en una celda del material que abre el otro.
+7. **Palancas (el puente que se abre):** **dos palancas azules** (una de cada lado) controlan a la vez la compuerta del muro y el **puente de compuertas** sobre el abismo: encendida abre el muro pero deja el puente abierto (hueco). Hay que encenderla, pasar, apagarla, cruzar y repetir desde el otro lado: el orden importa, pero nunca hay *deadlock* (las palancas se pueden volver a mover).
+8. **Las ruinas (todo junto):** carriles de luz y sombra, abismo con piedra de luz y **piedras-compuerta verdes**, compuerta cooperativa y una **torre en zigzag** con barrera, cristal y una compuerta verde. La palanca verde (al inicio) abre la torre **pero también las piedras verdes**: Umbra tiene que cruzar el abismo antes de que la enciendan.
 
-Los niveles los propone el agente, pero cada uno tiene que pasar la prueba jugando en modo un jugador antes de darlo por cerrado. Los niveles 01–04 se verificaron además con un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, techo y colisión lateral) que confirma que ambos spawns alcanzan sus puertas y sus 4 gemas por salto/gravedad.
+Los niveles 01–08 pasan `solve-levels` con la física normal y la conservadora, con las 4 gemas alcanzables. Los `timeTarget` son estimados y se ajustan jugando.
 
 ## Estética, juice y sonido
 
-Todo el arte se genera por código: formas geométricas, colores planos y efectos. No hay sprites externos, así el agente puede producir y ajustar todo solo.
+Todo el arte se genera por código: formas, degradés y efectos dibujados con **Canvas 2D** (`src/fx/art.ts`) y volcados a texturas con `textures.createCanvas` en `BootScene`. No hay sprites externos, así el agente puede producir y ajustar todo solo.
 
-Estilo visual: ruinas al atardecer (fondo #1a1626, paredes #2e2a3d con borde más claro). Lumo es un círculo amarillo cálido con un halo suave; Umbra, una figura violeta oscura con contorno claro para que se distinga del fondo. Los pozos tienen superficie animada (onda senoidal): los de luz brillan y los de sombra ondulan como humo. Las texturas se generan al iniciar con Graphics + generateTexture en una escena de carga.
+Estilo visual: ruinas al atardecer. Fondo con cielo en degradé, sol bajo, estrellas y siluetas de arcos y columnas en dos planos (tenues, para no competir con el nivel). Muros de piedra en ladrillos con 3 variantes y una cara superior iluminada con musgo cuando el tile está expuesto.
 
-Paleta confirmada (vive en `src/config/colors.ts`):
+- **Lumo:** espíritu redondo, cálido, con una llamita, ojos y mejillas; contorno ámbar para que se lea sobre la luz. Lleva un **halo de luz aditivo** que late suavemente.
+- **Umbra:** espíritu encapuchado violeta con borde inferior ondulado, contorno lavanda y **ojos brillantes**; lo rodea una penumbra. Los dos miran hacia donde se mueven.
+
+**Lenguaje visual: sol = Lumo, luna = Umbra.** Todo lo que lleva **sol** lo puede tocar Lumo (pisarlo sin peligro o romperlo); todo lo que lleva **luna**, Umbra. Así se lee de un vistazo:
+
+| Elemento | Cómo se ve | Emblema |
+| --- | --- | --- |
+| Pozo de luz | Líquido dorado brillante, superficie con ola senoidal, motas que suben | ☀ (lo pisa Lumo) |
+| Pozo de sombra | Humo violeta oscuro con borde lavanda, volutas que suben | ☾ (lo pisa Umbra) |
+| Abismo | Vacío casi negro con bruma violeta | — (nadie) |
+| Cristal oscuro | Bloque facetado de amatista negra | ☀ (lo rompe Lumo) |
+| Barrera de luz | Cortina de rayos dorados que titila | ☾ (la apaga Umbra) |
+| Puertas | Pedestal con el emblema y un arco-portal encima | ☀ Lumo / ☾ Umbra |
+| Botones, palancas, compuertas | Piezas grises teñidas con el color del ID; la palanca apagada se ve desaturada e inclinada a la izquierda, encendida a todo color e inclinada a la derecha; la compuerta abierta queda translúcida | color del ID |
+| Gemas | Diamantes facetados dorados (Lumo) y violetas (Umbra) que flotan | color |
+
+El menú muestra una leyenda con los dos personajes, sus teclas, su emblema y qué pisa/rompe cada uno.
+
+Paleta base de UI y mecánicas (vive en `src/config/colors.ts`; la paleta del arte dibujado está en `ART_COLORS` de `src/fx/art.ts`):
 
 | Elemento | Hex |
 | --- | --- |
@@ -195,7 +220,7 @@ Paleta confirmada (vive en `src/config/colors.ts`):
 
 Juice (en orden de prioridad):
 
-1. Rastro de partículas: destellos para Lumo, volutas de humo violeta para Umbra.
+1. Rastro de partículas: destellos para Lumo, volutas de humo violeta para Umbra. Además, partículas ambientales en cada pozo (motas de luz, humo de sombra, bruma del abismo) y estallido de partículas al disolverse un cristal o una barrera.
 2. Squash & stretch al saltar y aterrizar (tween de escala).
 3. Explosión de partículas del color del personaje al morir + screen shake corto (150 ms).
 4. Brillo en las puertas cuando su personaje está encima, usando el sistema de Filters de Phaser 4 (Glow).
@@ -208,7 +233,7 @@ Pantallas:
 - **Menú principal:** [Un jugador] y [Dos jugadores] (no existe botón "Jugar"). Elegir el modo abre el **selector de niveles**.
 - **Selector de niveles:** niveles 01–08 con sus estrellas; desbloqueo en orden; solo se puede elegir el nivel más alto desbloqueado o los ya completados.
 - **HUD (durante el nivel):** tiempo en `mm:ss` (ej. `01:23`), gemas como `X/Y` (ej. `3/5`) e icono del modo (1P/2P). Sin estrellas en el HUD (no spoilear el objetivo de tiempo).
-- **Pausa:** [Reanudar (Esc)] [Reiniciar (R)] [Silencio].
+- **Pausa:** [Reanudar (Esc)] [Reiniciar (R)] [Silencio] [Menú principal].
 - **Resultado:** tiempo, gemas y estrellas, y los botones [Siguiente nivel] [Reintentar] [Volver al menú]. En el nivel 8 se omite "Siguiente" (queda [Reintentar] [Volver al menú]).
 
 ## Arquitectura
@@ -227,7 +252,9 @@ lumo-y-umbra/
 │   └── sfx/
 ├── levels/                01.json … 08.json
 ├── scripts/
-│   └── validate-levels.ts
+│   ├── validate-levels.ts
+│   ├── solve-levels.mjs    simulador de física + solver cooperativo de niveles
+│   └── generate-sfx.ts
 ├── src/
 │   ├── main.ts             config de Phaser y lista de escenas
 │   ├── config/             physics.ts, colors.ts, keys.ts
@@ -239,7 +266,7 @@ lumo-y-umbra/
 │   │   └── progress.ts      guardado (recibe un storage inyectable)
 │   ├── scenes/             Boot, Menu, LevelSelect, Game, Result (la pausa es un overlay de GameScene)
 │   ├── objects/            Player, Door, Gate, Button, Lever, Gem, Crystal, Barrier, Hazard
-│   └── fx/                 partículas, shake, transiciones
+│   └── fx/                 art.ts (arte en Canvas 2D), partículas, sonido, transiciones
 ├── tests/                  *.test.ts de src/logic
 ```
 
@@ -247,9 +274,10 @@ Notas de arquitectura:
 
 - **Paredes, pisos y pozos sólidos:** grupo estático de Arcade (`staticGroup`) generado desde `levelParser` a partir de la grilla (sin tilemap).
 - **Pausa:** overlay dentro de `GameScene` (rectángulo oscuro + botones); congela todo con `physics.pause()` y deteniendo cronómetro y tweens. No existe una escena `Pause`.
-- **Carga de texturas:** `BootScene` genera todo el arte por código (`Graphics + generateTexture`) antes de arrancar `Game`.
+- **Carga de texturas:** `BootScene` genera todo el arte por código (Canvas 2D de `src/fx/art.ts` → `textures.createCanvas`) antes de arrancar el menú.
+- **Gancho de desarrollo:** solo con `npm run dev` (`import.meta.env.DEV`), `main.ts` expone `window.__lumoGame` para que las capturas automáticas (Playwright) abran niveles. No existe en el build.
 
-Scripts de package.json: `dev`, `build`, `preview`, `test`, `validate-levels`, `typecheck` (`tsc --noEmit`). El agente debe correr `typecheck`, `test` y `validate-levels` antes de dar un hito por terminado.
+Scripts de package.json: `dev`, `build`, `preview`, `test`, `validate-levels`, `solve-levels`, `generate-sfx`, `typecheck` (`tsc --noEmit`). El agente debe correr `typecheck`, `test` y `validate-levels` antes de dar un hito por terminado, y `solve-levels` cada vez que cambie un nivel.
 
 Escena de juego: carga el JSON, lo pasa por `levelParser`, crea un grupo estático de Arcade con las paredes y los pozos sólidos, y grupos para compuertas y gemas. Las colisiones y solapamientos llaman a funciones de `rules.ts` para decidir el resultado.
 
@@ -340,7 +368,7 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | A2 | Tiempo objetivo por nivel | Campo `timeTarget` (segundos) en cada `levels/NN.json`; obligatorio y validado por `validate-levels`. |
 | A3 | "Aceleración alta" sin número | Aceleración 2400 px/s² y desaceleración 2400 px/s² al soltar las teclas. |
 | A4 | Mecánica del salto variable | Al soltar la tecla en ascenso, `velocityY ×= 0.5` (solo si `velocityY < 0`). |
-| B4 | Hitbox de los personajes | Rectángulo de colisión de 24 × 40 px centrado en el sprite. |
+| B4 | Hitbox de los personajes | Rectángulo de colisión de 24 × 40 px centrado en el sprite. **Reemplazado por V5** (20 × 26 px). |
 | B5 | Criterio de "encima"/"pisar" | Contacto de la cara inferior del personaje con la cara superior del elemento. |
 | B3 | Colisión entre personajes | No colisionan entre sí; se ignoran en la física. |
 | B8 | Personaje inactivo (Tab) | Velocidad horizontal a 0, física activa: puede caer y morir sin control. |
@@ -386,7 +414,7 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | --- | --- | --- |
 | M6 | Objetos del nivel | `src/objects/` = { Player, Door, Gate, Button, Lever, Gem, Crystal, Barrier, Hazard }. Cada objeto con su lógica y su visual; Crystal y Barrier comparten una base mínima de bloque que se disuelve al contacto con el personaje correcto. |
 | M7 | Paredes/pisos/pozos sólidos | **staticGroup** de Arcade generado desde `levelParser` a partir de la grilla; sin tilemap. |
-| M8 | Pausa y carga de texturas | Pausa = **overlay dentro de `GameScene`** (`physics.pause()` + cronómetro y tweens detenidos); no existe escena Pause. `BootScene` genera el arte por código (`Graphics + generateTexture`) antes de arrancar Game. |
+| M8 | Pausa y carga de texturas | Pausa = **overlay dentro de `GameScene`** (`physics.pause()` + cronómetro y tweens detenidos); no existe escena Pause. `BootScene` genera el arte por código antes de arrancar (desde V1: Canvas 2D en vez de `Graphics + generateTexture`). |
 | M9 | Alcance de `validate-levels` | Confirmado el alcance completo documentado: nombre `NN.json` (ignora `test.json` y no-NN), `timeTarget` número > 0, grilla 17×30, alfabeto permitido, exactamente un `L`/`U`/`l`/`u`, `entities` válidas (type `button\|lever\|gate`, id no vacío, x/y dentro de la grilla) y tile libre arriba en cada compuerta. |
 | M10 | Criterio de los 8 niveles | Completabilidad probada en **modo un jugador**; la estrella de tiempo se verifica por **cálculo de rutas** (no hace falta que el agente baje el cronómetro jugando). |
 | M11 | Versiones en `package.json` | Se fijan **sin `^`**: `typescript 7.0.2`, `vite 8.3.3`, `vitest 5.0.3`, `@types/node 24.19.1` (Phaser ya estaba en 4.2.1). |
@@ -404,3 +432,21 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | N6 | Bloqueo de compuertas cooperativas | El muro que aloja la compuerta ocupa la **columna completa (filas 0-12)**, de modo que no se puede rodear la compuerta ni por arriba ni por los lados; la fila 13 queda libre como tile de retracción (la exige `levelParser`). |
 | N6b | Verificación de alcance | Para los niveles 1-4 se comprobó con un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, techo y colisión lateral) que ambos spawns alcanzan sus puertas y sus 4 gemas. El checker anterior (sin colisión lateral) daba falsos positivos; el simulador detectó que el primer rediseño de 01-04 no era pasable (techos de plataformas sobre el arco de salto y plataformas pegadas a muros). Los niveles 5–8 quedan pendientes de ese pase. |
 | N7 | Pasabilidad por encima del llenado de pantalla | Ante el conflicto entre "llenar las 30 × 17 celdas" y una geometría saltable, se **prioriza la pasabilidad**: escalones de **≤2 tiles** de altura y **≤4 tiles** de ancho, sin plataformas superpuestas sobre la trayectoria del salto. Puede quedar la parte superior libre. Los `timeTarget` (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) quedan a revisar jugando. |
+
+### Resueltas — rediseño visual y de niveles (v2)
+
+| # | Problema | Decisión |
+| --- | --- | --- |
+| V1 | Con formas planas no se entendía qué era cada cosa | El arte pasa a **Canvas 2D** (`src/fx/art.ts`): degradés, brillos y detalles. Sigue siendo 100 % por código, sin assets externos. Reemplaza a `Graphics + generateTexture` (que no soporta degradés en la textura generada). |
+| V2 | No se sabía qué pozo pisaba cada uno | **Sol = Lumo, luna = Umbra** en todo lo que cada uno puede tocar: pozos, cristal (sol), barrera (luna) y puertas. Pozo de luz = líquido dorado brillante con motas; pozo de sombra = humo violeta oscuro con borde lavanda. Leyenda en el menú. |
+| V3 | Personajes poco expresivos | Lumo con llamita, ojos y halo aditivo; Umbra encapuchado con ojos brillantes y penumbra. Miran hacia donde se mueven y desaparecen tras la explosión al morir. |
+| V4 | Mecanismos poco legibles | Botón que sobresale del piso; palanca inclinada (izquierda = apagada y desaturada, derecha = encendida a color); compuerta tipo rastrillo que queda **translúcida** al abrirse; puerta con arco-portal. |
+| N8 | Niveles poco interesantes | Los **8 niveles se rediseñan desde cero** con un arquetipo por nivel (ver *Progresión*) y más cooperación real: relevos, torres gemelas con botones cruzados, celdas de barrera/cristal, puente de compuertas con palancas y orden de acciones. |
+| N9 | Verificación de pasabilidad | Nuevo `npm run solve-levels` (ya no es un archivo temporal): física aproximada de Arcade + búsqueda de la secuencia cooperativa. Los 8 niveles tienen solución con física normal y conservadora y las 4 gemas son alcanzables. Reemplaza los criterios N5–N7. |
+| N10 | Explicar mecánicas nuevas | Campo opcional **`hints`** en el JSON del nivel (carteles dibujados en el escenario). |
+| N11 | Reglas de construcción | Pozos que deben bloquear: ≥ 5 tiles; abismos que deben bloquear: ≥ 6 tiles; pozos del elemento contrario a ≥ 6 filas por encima de donde se camina; botones/palancas sobre `#`; cada compuerta con su botón/palanca (lo valida `validate-levels`). |
+| V5 | Los personajes no pasaban por huecos de 1 tile | Personajes más chicos: hitbox **20 × 26 px** y sprite 24 × 30 px (antes 24 × 40). Pasan por pasillos y huecos de 1 tile. El squash & stretch mantiene los pies en el piso. |
+| N12 | Atajos por el tamaño reducido | Con 1 tile de alto, el tile libre de retracción encima de cada compuerta dejaba pasar **por encima de la compuerta cerrada** en todos los niveles. Se cambia la regla: las compuertas de pasillo llevan **dintel `#` justo arriba** y se esconden en él al abrirse (dibujadas por debajo de los muros); las compuertas-puente siguen con aire arriba. `validate-levels` acepta `#` o `.` arriba. `solve-levels --atajos` confirma que ningún botón ni palanca se puede saltear en 01–08. |
+| N13 | Quedarse parado en el hueco de una compuerta | Regla vigente (A5): una compuerta no se cierra mientras alguien ocupa su tile. Por eso, en las compuertas cooperativas de 1 y 8, quien pasa puede quedarse en el hueco para que el otro cruce sin usar el segundo botón. Es un atajo menor (el primer botón sigue siendo obligatorio) y se mantiene para no arriesgar que la compuerta atrape o aplaste a alguien. |
+| U1 | Salir del nivel desde la pausa | La pausa suma **[Menú principal]**: vuelve al menú sin guardar el intento en curso (el progreso ya ganado no se toca). |
+

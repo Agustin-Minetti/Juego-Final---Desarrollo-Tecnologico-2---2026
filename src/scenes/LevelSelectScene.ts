@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
 import { levelIds } from '../config/levels';
+import { TEXTURE_KEYS } from '../config/textures';
 import { fadeIn } from '../fx/transitions';
 import { controlStateForMode, type ControlMode } from '../logic/controlMode';
 import { browserStorage, isLevelUnlocked, loadProgress, MAX_STARS, starsFor } from '../logic/progress';
@@ -29,6 +30,8 @@ export class LevelSelectScene extends Phaser.Scene {
     const mode: ControlMode = data.mode ?? 'two-player';
     const progress = loadProgress(browserStorage());
     const ids = levelIds();
+    this.add.image(0, 0, TEXTURE_KEYS.background).setOrigin(0, 0);
+    this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x0c0816, 0.35).setOrigin(0, 0);
 
     const modeLabel = mode === 'two-player' ? 'Dos jugadores' : 'Un jugador';
     this.add
