@@ -6,9 +6,13 @@ import { TEXTURE_KEYS } from '../config/textures';
 
 type GatePhase = 'closed' | 'opening' | 'open' | 'closing';
 
+/** Transparencia de la compuerta abierta: se ve, pero se lee como "se puede pasar". */
+const OPEN_ALPHA = 0.3;
+
 /**
  * Compuerta: bloque sólido que se desliza hacia arriba al abrirse (tween de
- * 200 ms) y nunca mata (DESIGN → Elementos del nivel). Al cerrarse, si un
+ * 200 ms) y nunca mata (DESIGN → Elementos del nivel). En un pasillo se
+ * esconde dentro del dintel; usada como piso queda translúcida en el aire. Al cerrarse, si un
  * personaje ocupa el tile destino, detiene el cierre hasta que quede libre.
  */
 export class Gate extends Phaser.Physics.Arcade.Image {
@@ -35,6 +39,8 @@ export class Gate extends Phaser.Physics.Arcade.Image {
     body.setAllowGravity(false);
     body.setImmovable(true);
     this.setTint(colorToNumber(colorForSwitch(id)));
+    // por debajo de los muros: al abrirse se esconde dentro del dintel
+    this.setDepth(0.5);
   }
 
   get isOpen(): boolean {
@@ -74,6 +80,7 @@ export class Gate extends Phaser.Physics.Arcade.Image {
     this.scene.tweens.add({
       targets: this,
       y: this.retractedY,
+      alpha: OPEN_ALPHA,
       duration: GATE_TWEEN_MS,
       onComplete: () => {
         this.phase = 'open';
@@ -89,6 +96,7 @@ export class Gate extends Phaser.Physics.Arcade.Image {
     this.scene.tweens.add({
       targets: this,
       y: this.closedY,
+      alpha: 1,
       duration: GATE_TWEEN_MS,
       onComplete: () => {
         this.phase = 'closed';

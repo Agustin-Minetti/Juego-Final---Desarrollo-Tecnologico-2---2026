@@ -5,8 +5,10 @@ import { TEXTURE_KEYS } from '../config/textures';
 import { isStandingOn } from '../logic/rules';
 import type { Player } from './Player';
 
-const BUTTON_HEIGHT = 10;
-const PRESS_OFFSET = 3;
+const BUTTON_HEIGHT = 12;
+/** Parte del botón que queda hundida en el piso (el resto sobresale). */
+const SUNK = 4;
+const PRESS_OFFSET = 4;
 
 /**
  * Botón: activo mientras algún personaje lo pisa (DESIGN → Elementos del
@@ -20,12 +22,13 @@ export class Button extends Phaser.GameObjects.Image {
   private pressed = false;
 
   constructor(scene: Phaser.Scene, tx: number, ty: number, id: string) {
-    super(scene, tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + BUTTON_HEIGHT / 2, TEXTURE_KEYS.button);
+    super(scene, tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE - BUTTON_HEIGHT / 2 + SUNK, TEXTURE_KEYS.button);
     this.id = id;
     this.tx = tx;
     this.ty = ty;
     scene.add.existing(this);
     this.setTint(colorToNumber(colorForSwitch(id)));
+    this.setDepth(8);
   }
 
   isPlayerStanding(player: Player): boolean {
@@ -45,6 +48,6 @@ export class Button extends Phaser.GameObjects.Image {
       return;
     }
     this.pressed = pressed;
-    this.setY(this.ty * TILE_SIZE + BUTTON_HEIGHT / 2 + (pressed ? PRESS_OFFSET : 0));
+    this.setY(this.ty * TILE_SIZE - BUTTON_HEIGHT / 2 + SUNK + (pressed ? PRESS_OFFSET : 0));
   }
 }

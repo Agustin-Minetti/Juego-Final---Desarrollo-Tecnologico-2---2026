@@ -12,6 +12,7 @@ Estado del avance por hito. Lo actualiza el agente al cerrar cada tarea.
 | 4. Botones y elementos | completado | Commit `2882077` en `feature/hito-4-botones-elementos` (push); listo salvo prueba manual humana |
 | 5. Pantallas y progreso | completado | Commit `5557f18` (escenas Menu/LevelSelect/Result, HUD, pausa y progreso); listo salvo prueba manual humana |
 | 6. Pulido y nivel final | en curso | Juice, SFX por código, nivel `08` y build; en `feature/hito-6-pulido-nivel-final`; listo salvo prueba manual humana |
+| v2. Rediseño visual y de niveles | listo salvo prueba manual (incluye v2.1: personajes chicos, atajos, botón de menú) | Arte nuevo (Canvas 2D, sol/luna), 8 niveles rediseñados, `hints`, `solve-levels`; cambios en el working tree, **sin commitear** (ver sección al final) |
 
 ## Hito 1: Esqueleto
 
@@ -349,6 +350,8 @@ Pendiente humano:
 
 ## Rediseño de niveles (post-Hito 6)
 
+> **Reemplazado** por *Rediseño visual y de niveles (v2)* (al final de este archivo): los niveles y los pendientes de esta sección ya no aplican.
+
 Rama: `feature/rediseno-niveles`.
 
 Hecho:
@@ -442,3 +445,78 @@ Pendiente humano:
 - [ ] Revisar los `timeTarget` (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) jugando; ajustar si la estrella de tiempo queda inalcanzable.
 
 Nota: el simulador está en un archivo temporal, **no** se commitea.
+
+## Rediseño visual y de niveles (v2)
+
+Pedido: mejorar el diseño de Lumo, Umbra y los pozos (que se entienda qué pisa cada uno), mejorar el diseño de los niveles y actualizar la documentación. Reemplaza los niveles del *Rediseño de niveles (post-Hito 6)* y sus pendientes.
+
+Hecho — arte (todo por código, sin assets externos):
+
+- `src/fx/art.ts` (nuevo): dibujo en Canvas 2D de fondo (cielo de atardecer, sol, estrellas, ruinas en dos planos), muros de piedra (3 variantes + cara superior con musgo), pozos de luz/sombra y abismo (variante de superficie), Lumo, Umbra, halos, puertas (pedestal + arco), botón, palanca, compuerta, gemas, cristal, barrera, partículas e iconos de sol y luna.
+- **Convención sol = Lumo / luna = Umbra:** el emblema aparece en los pozos que cada uno pisa, en el cristal (sol, lo rompe Lumo), en la barrera (luna, la apaga Umbra) y en las puertas.
+- `src/config/textures.ts`: claves nuevas (`background`, `wall0..2`, `wallTop0..2`, `*Top` de pozos y abismo, auras, arcos, `smoke`, `sunBadge`, `moonBadge`).
+- `src/scenes/BootScene.ts`: genera todas las texturas con `textures.createCanvas`.
+- `src/scenes/GameScene.ts`: fondo, muros con cara superior, pozos con **ola senoidal animada**, partículas ambientales por pozo (motas de luz, humo, bruma del abismo), emblema sol/luna en cada pozo, carteles `hints`, halos de los personajes; al morir el personaje desaparece tras la explosión.
+- `src/objects/`: `Player` (halo + mira hacia donde se mueve + `vanish`), `Door` (arco-portal con Glow), `Button` (sobresale del piso), `Lever` (inclinación y color según estado; apagada se ve desaturada), `Gate` (translúcida al abrirse), `Gem` (flota), `Dissolvable`/`Crystal`/`Barrier` (estallido al disolverse; la barrera titila), `Hazard` (textura de superficie).
+- `src/scenes/MenuScene.ts`: fondo y **leyenda** de los dos personajes (teclas, emblema, qué pisa/rompe cada uno). `LevelSelectScene` y `ResultScene` con fondo.
+- `src/main.ts`: gancho `window.__lumoGame` solo en desarrollo (capturas automáticas).
+
+Hecho — niveles:
+
+- `levels/01.json` … `08.json` rediseñados desde cero (ver `DESIGN.md` → *Progresión de los 8 niveles*): torre y templo, carriles cruzados de luz/sombra, piedras sobre el abismo, relevo arriba/abajo, torres gemelas con botones cruzados, celdas de barrera/cristal con puente y piso disolvibles, puente de compuertas con dos palancas, y "Las ruinas" con torre en zigzag.
+- `timeTarget`: 01: 40 s · 02: 40 s · 03: 45 s · 04: 45 s · 05: 70 s · 06: 45 s · 07: 60 s · 08: 80 s (estimados, a ajustar jugando).
+- `src/logic/levelParser.ts`: campo opcional `hints` y validaciones nuevas (botón/palanca sobre `#`, cada compuerta con su botón/palanca y viceversa, `hints` válidos).
+- `scripts/solve-levels.mjs` + script `npm run solve-levels`: simulador de física aproximado de Arcade + búsqueda de la secuencia cooperativa más corta, con física normal y conservadora (salto −455, velocidad 190).
+
+Verificaciones:
+
+| Comando | Resultado |
+| --- | --- |
+| `npm run typecheck` | en verde |
+| `npm test` | 100/100 tests en verde (4 tests nuevos de validación y `hints`) |
+| `npm run validate-levels` | en verde (8 niveles válidos) |
+| `npm run solve-levels` | 01–08 con solución en física normal y conservadora, 4/4 gemas alcanzables; en 01 y 03–08 al menos uno necesita ayuda del otro; 02 es individual a propósito |
+| `npm run build` + `npm run preview` | OK, sin errores en consola (warning de chunk > 500 kB por Phaser, preexistente) |
+| Capturas con Playwright (`npm run dev`) | los 8 niveles, menú y selector se ven bien y sin errores de consola; Umbra apaga la barrera de la celda del nivel 6 y las dos palancas azules del nivel 7 comparten estado |
+
+Pendiente humano:
+
+- [ ] Jugar los 8 niveles (en 1P con Tab y en 2P) y confirmar que se entienden y se sienten bien. El solver es aproximado: puede haber algún salto más justo de lo que parece.
+- [ ] Ajustar los `timeTarget` jugando.
+- [ ] Revisar que la leyenda del menú y los carteles se lean bien en la pantalla de ustedes.
+- [ ] Crear la rama (por ejemplo `feature/rediseno-visual-niveles`), commitear y hacer push (los cambios están en el working tree).
+- [x] `.docx` del GDD actualizado (ver v2.1).
+
+### v2.1 — Personajes más chicos, análisis de atajos y botón de menú en la pausa
+
+Pedido: que los dos pasen por espacios de 1 tile (achicarlos), analizar dónde se podían saltear los puzzles por el tamaño nuevo y agregar en la pausa un botón para volver al menú principal.
+
+Hecho:
+
+- `src/config/physics.ts`: `PLAYER_BODY_WIDTH/HEIGHT` = **20 × 26** y `PLAYER_TEXTURE_WIDTH/HEIGHT` = 24 × 30. `Player` usa esos valores (pies en el borde inferior; el squash & stretch los mantiene en el piso). `fx/art.ts` dibuja a Lumo y Umbra escalados al tamaño nuevo.
+- **Atajo encontrado y corregido:** el tile libre que cada compuerta necesitaba arriba (para retraerse) dejaba un hueco de 1 tile **por encima de la compuerta cerrada**: con el tamaño nuevo, todas las compuertas de pasillo de 01, 03, 04, 05 y 08 se podían saltear. Ahora llevan un **dintel `#` justo arriba** y al abrirse se esconden en él (`Gate` se dibuja debajo de los muros). Las compuertas-puente de 07 y 08 siguen con aire arriba. `levelParser` acepta `#` o `.` arriba de una compuerta (tests actualizados).
+- Ajustes de margen: 01 (repisas altas a 2 tiles de distancia), 03 (escalón de la torre de Lumo más cerca).
+- `scripts/solve-levels.mjs`: cuerpo 20 × 26; arreglo de dos falsos atajos del simulador (nodos que quedaban incrustados en muros por el redondeo y en el hueco de una compuerta: ahora se los empuja al costado libre como hace Arcade); nueva opción `--atajos` (incluida en `npm run solve-levels`) que anula cada botón/palanca, cristal y barrera por separado y vuelve a resolver.
+- `GameScene`: botón **[Menú principal]** en la pausa.
+
+Resultado del análisis de atajos (`npm run solve-levels`):
+
+| Nivel | Resultado |
+| --- | --- |
+| 01, 03 | botón rojo imprescindible |
+| 04, 05 | todos los botones (rojo, azul, verde y en 05 amarillo) imprescindibles |
+| 06 | barreras de las celdas y cristales de los muros imprescindibles; el puente de barreras y el piso de cristal "no hacen falta disolverlos" (son caminos: está bien) |
+| 07 | palancas azules imprescindibles |
+| 08 | palanca verde, botones rojos, cristal y barrera de la torre imprescindibles |
+| 02 | sin mecanismos (nivel individual a propósito) |
+
+Atajo menor que queda (documentado en `DESIGN.md` → N13): en las compuertas cooperativas de 01 y 08, quien pasa puede quedarse parado en el hueco para que la compuerta no se cierre y el otro cruce sin el segundo botón.
+
+Verificaciones: `npm run typecheck` en verde · `npm test` 100/100 · `npm run validate-levels` en verde · `npm run solve-levels` en verde (normal y conservador, 4/4 gemas, ningún botón/palanca salteable) · capturas con Playwright sin errores; la pausa muestra [Menú principal] y vuelve al menú.
+
+Pendiente humano:
+
+- [ ] Jugar los 8 niveles con el tamaño nuevo (sobre todo pasillos y saltos con techo).
+- [ ] Commit y push de los cambios.
+- [x] GDD `.docx` actualizado con el rediseño (personajes, progresión de niveles, estética sol/luna, compuertas con dintel, scripts, pausa y sección final *Cambios del rediseño (v2)*). `README.md` reescrito (cómo jugar, instalar, comandos, Vercel).
+

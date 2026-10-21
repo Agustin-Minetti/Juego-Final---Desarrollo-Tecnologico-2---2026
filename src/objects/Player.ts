@@ -1,6 +1,15 @@
 import Phaser from 'phaser';
 import { SFX_KEYS } from '../config/audio';
-import { ACCELERATION, JUMP_VELOCITY, JUMP_CUT_FACTOR, MOVE_SPEED } from '../config/physics';
+import {
+  ACCELERATION,
+  JUMP_CUT_FACTOR,
+  JUMP_VELOCITY,
+  MOVE_SPEED,
+  PLAYER_BODY_HEIGHT,
+  PLAYER_BODY_WIDTH,
+  PLAYER_TEXTURE_HEIGHT,
+  PLAYER_TEXTURE_WIDTH,
+} from '../config/physics';
 import { playSfx } from '../fx/sfx';
 import { createJumpState, updateJump } from '../logic/movement';
 
@@ -10,25 +19,54 @@ export interface PlayerKeys {
   jump: Phaser.Input.Keyboard.Key;
 }
 
-const BODY_WIDTH = 24;
-const BODY_HEIGHT = 40;
-const BODY_OFFSET_X = 4;
+const BODY_OFFSET_X = (PLAYER_TEXTURE_WIDTH - PLAYER_BODY_WIDTH) / 2;
+/** El cuerpo se apoya en el borde inferior de la textura (los pies). */
+const BODY_OFFSET_Y = PLAYER_TEXTURE_HEIGHT - PLAYER_BODY_HEIGHT;
 const LAND_SQUASH_SPEED = 120;
+const FACING_THRESHOLD = 10;
+
+export interface PlayerAuraConfig {
+  texture: string;
+  blendMode: Phaser.BlendModes;
+  alpha: number;
+  scale: number;
+}
 
 export class Player extends Phaser.Physics.Arcade.Sprite {
   private jumpState = createJumpState();
   private wasGrounded = false;
   private lastVelocityY = 0;
   private squashTween?: Phaser.Tweens.Tween;
+  /** Halo (Lumo) o penumbra (Umbra) que acompaña al personaje. */
+  readonly aura?: Phaser.GameObjects.Image;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string) {
+  constructor(scene: Phaser.Scene, x: number, y: number, texture: string, aura?: PlayerAuraConfig) {
     super(scene, x, y, texture);
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setDepth(20);
 
+    if (aura) {
+      this.aura = scene.add
+        .image(x, y, aura.texture)
+        .setBlendMode(aura.blendMode)
+        .setAlpha(aura.alpha)
+        .setScale(aura.scale)
+        .setDepth(6);
+      scene.tweens.add({
+        targets: this.aura,
+        scale: aura.scale * 1.08,
+        alpha: aura.alpha * 0.8,
+        duration: 900,
+        yoyo: true,
+        repeat: -1,
+        ease: 'Sine.easeInOut',
+      });
+    }
+
     const body = this.body as Phaser.Physics.Arcade.Body;
-    body.setSize(BODY_WIDTH, BODY_HEIGHT, true);
+    body.setSize(PLAYER_BODY_WIDTH, PLAYER_BODY_HEIGHT, false);
+    body.setOffset(BODY_OFFSET_X, BODY_OFFSET_Y);
     body.setCollideWorldBounds(true);
     body.setDragX(ACCELERATION);
     body.maxVelocity.x = MOVE_SPEED;
@@ -42,6 +80,7 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
       body.setAccelerationX(0);
       body.setVelocityX(0);
       this.updateVerticalFeel(grounded);
+      this.syncDecor();
       return;
     }
 
@@ -66,6 +105,24 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     }
 
     this.updateVerticalFeel(grounded);
+    this.syncDecor();
+  }
+
+  /** Mira hacia donde se mueve y arrastra el halo. */
+  syncDecor(): void {
+    const body = this.body as Phaser.Physics.Arcade.Body;
+    if (body.velocity.x > FACING_THRESHOLD) {
+      this.setFlipX(false);
+    } else if (body.velocity.x < -FACING_THRESHOLD) {
+      this.setFlipX(true);
+    }
+    this.aura?.setPosition(this.x, this.y);
+  }
+
+  /** Oculta al personaje (al morir, tras la explosión de partículas). */
+  vanish(): void {
+    this.setVisible(false);
+    this.aura?.setVisible(false);
   }
 
   private updateVerticalFeel(grounded: boolean): void {
@@ -101,6 +158,8 @@ export class Player extends Phaser.Physics.Arcade.Sprite {
     if (!body) {
       return;
     }
-    body.setOffset(BODY_OFFSET_X, BODY_HEIGHT / 2 / this.scaleY - BODY_HEIGHT / 2);
+    // mantiene los pies del cuerpo en el mismo lugar aunque cambie la escala
+    const halfTexture = PLAYER_TEXTURE_HEIGHT / 2;
+    body.setOffset(BODY_OFFSET_X, halfTexture / this.scaleY - (PLAYER_BODY_HEIGHT - halfTexture));
   }
 }

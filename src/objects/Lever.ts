@@ -5,8 +5,20 @@ import { TEXTURE_KEYS } from '../config/textures';
 import { isStandingOn } from '../logic/rules';
 import type { Player } from './Player';
 
-const LEVER_HEIGHT = 20;
-const OFF_TINT = 0x6b6478;
+const LEVER_HEIGHT = 24;
+const SUNK = 2;
+/** Apagada: el color del ID mezclado con gris (se sigue leyendo a qué compuerta va). */
+const OFF_MIX = 0.6;
+const OFF_GRAY = 0x8a8299;
+
+function offTint(color: number): number {
+  const mix = (shift: number): number => {
+    const a = (color >> shift) & 255;
+    const b = (OFF_GRAY >> shift) & 255;
+    return Math.round(a * (1 - OFF_MIX) + b * OFF_MIX) << shift;
+  };
+  return mix(16) | mix(8) | mix(0);
+}
 
 /**
  * Palanca: cualquiera de los personajes puede usarla; alterna por borde de
@@ -20,12 +32,12 @@ export class Lever extends Phaser.GameObjects.Image {
   private onState = false;
 
   constructor(scene: Phaser.Scene, tx: number, ty: number, id: string) {
-    super(scene, tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE + LEVER_HEIGHT / 2, TEXTURE_KEYS.lever);
+    super(scene, tx * TILE_SIZE + TILE_SIZE / 2, ty * TILE_SIZE - LEVER_HEIGHT / 2 + SUNK, TEXTURE_KEYS.lever);
     this.id = id;
     this.tx = tx;
     this.ty = ty;
     scene.add.existing(this);
-    this.setTint(OFF_TINT);
+    this.setTint(offTint(colorToNumber(colorForSwitch(id)))).setDepth(8);
   }
 
   isPlayerStanding(player: Player): boolean {
@@ -41,6 +53,9 @@ export class Lever extends Phaser.GameObjects.Image {
       return;
     }
     this.onState = on;
-    this.setTint(on ? colorToNumber(colorForSwitch(this.id)) : OFF_TINT);
+    const color = colorToNumber(colorForSwitch(this.id));
+    this.setTint(on ? color : offTint(color));
+    // apagada: inclinada a la izquierda; encendida: a la derecha
+    this.setFlipX(on);
   }
 }

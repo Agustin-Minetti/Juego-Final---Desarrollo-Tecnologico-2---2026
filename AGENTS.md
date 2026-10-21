@@ -124,7 +124,7 @@ Repetir esta revisión en cada tarea; no asumir que la estructura permanece igua
 
 ## 7. Consultar sobre sprites y recursos gráficos
 
-Contexto de este proyecto: **todo el arte se genera por código** (`Graphics + generateTexture` en la escena de carga); no hay sprites externos y el arte externo está fuera de alcance. El sonido son `.wav` generados con jsfxr en `public/sfx/`.
+Contexto de este proyecto: **todo el arte se genera por código** (Canvas 2D en `src/fx/art.ts`, volcado a texturas con `textures.createCanvas` en `BootScene`); no hay sprites externos y el arte externo está fuera de alcance. Convención visual: **sol = lo que toca Lumo, luna = lo que toca Umbra** (ver `docs/DESIGN.md` → *Estética*). El sonido son `.wav` generados con jsfxr en `public/sfx/`.
 
 Cuando una tarea requiera recursos visuales o sonoros:
 
@@ -178,6 +178,7 @@ Si el proyecto no tiene repositorio Git o remoto configurado, informar la situac
   - `localStorage` siempre dentro de `try/catch`.
   - Arte solo por código; sin assets externos.
 - Ejecutar las comprobaciones disponibles y pertinentes al cambio. Antes de dar un hito por terminado: `npm run typecheck`, `npm test` y `npm run validate-levels` (verificar en `package.json` que los scripts existan antes de invocarlos; si no existen aún, informarlo).
+- Si se modifica un nivel, correr además `npm run solve-levels`: debe informar solución con la física normal y la conservadora, las gemas alcanzables y ningún botón/palanca "SE PUEDE SALTEAR". Los personajes caben en 1 tile: todo hueco de 1 tile es un pasaje, y las compuertas de pasillo llevan dintel `#` justo arriba. Las capturas con Playwright pueden abrir niveles vía `window.__lumoGame` (solo en `npm run dev`).
 - Verificar las interacciones identificadas durante el análisis de impacto. Modo debug: `?debug=1` en la URL y teclas 1–8 para saltar de nivel.
 - Agregar pruebas cuando aporten valor para validar reglas o prevenir regresiones; evitar pruebas que solo repliquen la implementación.
 - Actualizar `docs/PROGRESS.md` con lo hecho y lo pendiente cuando el archivo exista.

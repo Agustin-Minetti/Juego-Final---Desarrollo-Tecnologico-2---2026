@@ -57,4 +57,18 @@ describe('parseLevel', () => {
   it('lanza error al parsear nivel inválido', () => {
     expect(() => parseLevel('{invalid')).toThrow();
   });
+
+  it('incluye los carteles de ayuda (o una lista vacÃ­a si no hay)', () => {
+    const grid = Array.from({ length: GRID_ROWS }, () => '.'.repeat(GRID_COLS));
+    place(grid, 2, 1, 'L');
+    place(grid, 3, 1, 'U');
+    place(grid, 4, 5, 'l');
+    place(grid, 5, 5, 'u');
+    const sinCarteles = parseLevel(JSON.stringify({ timeTarget: 30, grid, entities: [] }));
+    expect(sinCarteles.hints).toEqual([]);
+    const conCarteles = parseLevel(
+      JSON.stringify({ timeTarget: 30, grid, entities: [], hints: [{ x: 1, y: 2, text: 'Hola' }] }),
+    );
+    expect(conCarteles.hints).toEqual([{ x: 1, y: 2, text: 'Hola' }]);
+  });
 });

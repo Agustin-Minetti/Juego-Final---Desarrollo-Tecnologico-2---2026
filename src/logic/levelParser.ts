@@ -13,11 +13,22 @@ export interface LevelEntity {
   y: number;
 }
 
+/** Texto de ayuda dibujado en el nivel (columna/fila de la grilla, 0-based). */
+export interface LevelHint {
+  x: number;
+  y: number;
+  text: string;
+}
+
 export interface LevelData {
   timeTarget: number;
   grid: string[];
   entities: LevelEntity[];
+  /** Opcional: carteles de ayuda (niveles introductorios). */
+  hints?: LevelHint[];
 }
+
+export const MAX_HINT_LENGTH = 80;
 
 export interface Point {
   x: number;
@@ -54,6 +65,7 @@ export interface StaticTile {
 }
 
 export interface ParsedLevel extends LevelData {
+  hints: LevelHint[];
   spawns: SpawnPoints;
   doors: DoorPoints;
   gems: GemPoints;
@@ -171,11 +183,67 @@ export function validateLevel(raw: string): string[] {
 
     if (e.type === 'gate' && typeof ex === 'number' && Number.isInteger(ex) && typeof ey === 'number' && Number.isInteger(ey)) {
       const above = typeof grid[ey - 1] === 'string' ? grid[ey - 1]?.[ex] : undefined;
-      if (above !== '.') {
-        errors.push(`${prefix}: compuerta en (${ex}, ${ey}) sin tile libre arriba`);
+      // La compuerta se abre deslizándose hacia arriba: se esconde dentro del
+      // dintel ('#', compuerta de pasillo) o queda translúcida en el aire ('.',
+      // compuerta usada como piso/puente).
+      if (above !== '#' && above !== '.') {
+        errors.push(`${prefix}: compuerta en (${ex}, ${ey}) necesita arriba un dintel "#" o un tile libre "."`);
       }
     }
   });
+
+  // Botones y palancas se apoyan sobre un tile de piso ('#').
+  level.entities.forEach((entity, index) => {
+    const e = entity as Partial<LevelEntity>;
+    if ((e.type !== 'button' && e.type !== 'lever') || typeof e.x !== 'number' || typeof e.y !== 'number') {
+      return;
+    }
+    if (grid[e.y]?.[e.x] !== '#') {
+      const label = e.type === 'button' ? 'botón' : 'palanca';
+      errors.push(`entities[${index}]: ${label} en (${e.x}, ${e.y}) no está sobre un piso "#"`);
+    }
+  });
+
+  // Cada compuerta necesita algo que la abra y cada botón/palanca algo que abrir.
+  const entities = level.entities.filter(
+    (entity): entity is LevelEntity => typeof entity === 'object' && entity !== null && isEntityType(entity.type),
+  );
+  const gateIds = new Set(entities.filter((e) => e.type === 'gate').map((e) => e.id));
+  const switchIds = new Set(entities.filter((e) => e.type !== 'gate').map((e) => e.id));
+  for (const id of gateIds) {
+    if (!switchIds.has(id)) {
+      errors.push(`la compuerta "${id}" no tiene botón ni palanca con su ID`);
+    }
+  }
+  for (const id of switchIds) {
+    if (!gateIds.has(id)) {
+      errors.push(`el botón/palanca "${id}" no controla ninguna compuerta`);
+    }
+  }
+
+  if (level.hints !== undefined) {
+    if (!Array.isArray(level.hints)) {
+      errors.push('"hints" debe ser un arreglo');
+    } else {
+      level.hints.forEach((hint, index) => {
+        const h = hint as Partial<LevelHint> | null;
+        const prefix = `hints[${index}]`;
+        if (typeof h !== 'object' || h === null) {
+          errors.push(`${prefix}: no es un objeto`);
+          return;
+        }
+        if (typeof h.x !== 'number' || !Number.isInteger(h.x) || h.x < 0 || h.x >= GRID_COLS) {
+          errors.push(`${prefix}: "x" debe ser un entero entre 0 y ${GRID_COLS - 1}`);
+        }
+        if (typeof h.y !== 'number' || !Number.isInteger(h.y) || h.y < 0 || h.y >= GRID_ROWS) {
+          errors.push(`${prefix}: "y" debe ser un entero entre 0 y ${GRID_ROWS - 1}`);
+        }
+        if (typeof h.text !== 'string' || h.text.trim().length === 0 || h.text.length > MAX_HINT_LENGTH) {
+          errors.push(`${prefix}: "text" debe ser un texto de 1 a ${MAX_HINT_LENGTH} caracteres`);
+        }
+      });
+    }
+  }
 
   return errors;
 }
@@ -256,6 +324,7 @@ export function parseLevel(raw: string): ParsedLevel {
     timeTarget: data.timeTarget,
     grid: data.grid,
     entities: data.entities,
+    hints: data.hints ?? [],
     spawns,
     doors,
     gems,

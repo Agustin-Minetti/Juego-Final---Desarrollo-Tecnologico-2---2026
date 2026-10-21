@@ -18,13 +18,13 @@ describe('niveles de la progresión', () => {
     expect(level.entities.length).toBeGreaterThanOrEqual(0);
   });
 
-  it('cada compuerta tiene un tile libre arriba para retraerse', () => {
+  it('cada compuerta tiene arriba un dintel o un tile libre para retraerse', () => {
     for (const id of PROGRESSION) {
       const raw = readFileSync(join(LEVELS_DIR, `${id}.json`), 'utf8');
       const data = JSON.parse(raw) as { grid: string[]; entities: Array<{ type: string; x: number; y: number }> };
       for (const entity of data.entities) {
         if (entity.type === 'gate') {
-          expect(data.grid[entity.y - 1][entity.x]).toBe('.');
+          expect(['#', '.']).toContain(data.grid[entity.y - 1][entity.x]);
         }
       }
     }

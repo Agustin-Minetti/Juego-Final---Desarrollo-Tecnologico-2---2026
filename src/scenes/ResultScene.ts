@@ -2,6 +2,7 @@ import Phaser from 'phaser';
 import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
 import { levelIds } from '../config/levels';
+import { TEXTURE_KEYS } from '../config/textures';
 import { fadeIn } from '../fx/transitions';
 import { controlStateForMode, type ControlMode } from '../logic/controlMode';
 import { MAX_STARS } from '../logic/progress';
@@ -30,6 +31,8 @@ export class ResultScene extends Phaser.Scene {
   create(data: ResultData): void {
     const cx = GAME_WIDTH / 2;
     const ids = levelIds();
+    this.add.image(0, 0, TEXTURE_KEYS.background).setOrigin(0, 0);
+    this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x0c0816, 0.35).setOrigin(0, 0);
     const hasNext = data.levelIndex + 1 < ids.length;
     const nextId = hasNext ? ids[data.levelIndex + 1] : null;
 
