@@ -3,6 +3,7 @@ import { SFX_FILES } from '../config/audio';
 import { GAME_HEIGHT, GAME_WIDTH, TILE_SIZE } from '../config/game';
 import { PLAYER_TEXTURE_HEIGHT, PLAYER_TEXTURE_WIDTH } from '../config/physics';
 import { TEXTURE_KEYS, WALL_VARIANTS, wallTextureKey } from '../config/textures';
+import { initialLanguage, loadLanguage } from '../services/language';
 import {
   drawAbyss,
   drawBackground,
@@ -97,7 +98,8 @@ export class BootScene extends Phaser.Scene {
     this.canvasTexture(TEXTURE_KEYS.sunBadge, BADGE_SIZE, BADGE_SIZE, (ctx) => drawSunBadge(ctx, BADGE_SIZE));
     this.canvasTexture(TEXTURE_KEYS.moonBadge, BADGE_SIZE, BADGE_SIZE, (ctx) => drawMoonBadge(ctx, BADGE_SIZE));
 
-    this.scene.start('Menu');
+    // Las traducciones se cargan antes de mostrar cualquier texto.
+    void loadLanguage(initialLanguage()).then(() => this.scene.start('Menu'));
   }
 
   /** Crea una textura de canvas, la dibuja con `draw` y la sube a la GPU. */

@@ -74,17 +74,5 @@
       "x": 21,
       "y": 11
     }
-  ],
-  "hints": [
-    {
-      "x": 10,
-      "y": 2,
-      "text": "La palanca azul abre la compuerta..."
-    },
-    {
-      "x": 10,
-      "y": 3,
-      "text": "...pero también abre el puente"
-    }
   ]
 }

@@ -19,22 +19,5 @@
     "##############cccccccc##l###u#",
     "##############aaaaaaaa########"
   ],
-  "entities": [],
-  "hints": [
-    {
-      "x": 4,
-      "y": 4,
-      "text": "Umbra apaga la barrera de luz al tocarla"
-    },
-    {
-      "x": 4,
-      "y": 5,
-      "text": "Lumo disuelve el cristal oscuro al tocarlo"
-    },
-    {
-      "x": 14,
-      "y": 2,
-      "text": "Lumo cruza por la luz, Umbra por el cristal"
-    }
-  ]
+  "entities": []
 }

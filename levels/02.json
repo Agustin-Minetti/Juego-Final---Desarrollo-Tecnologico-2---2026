@@ -19,27 +19,5 @@
     "########pppppp########ssssssu#",
     "########pppppp########ssssss##"
   ],
-  "entities": [],
-  "hints": [
-    {
-      "x": 1,
-      "y": 2,
-      "text": "La luz no lastima a Lumo,"
-    },
-    {
-      "x": 1,
-      "y": 3,
-      "text": "pero disuelve a Umbra"
-    },
-    {
-      "x": 17,
-      "y": 2,
-      "text": "La sombra no lastima a Umbra,"
-    },
-    {
-      "x": 17,
-      "y": 3,
-      "text": "pero apaga a Lumo"
-    }
-  ]
+  "entities": []
 }

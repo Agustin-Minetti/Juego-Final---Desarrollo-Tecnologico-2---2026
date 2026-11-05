@@ -41,11 +41,11 @@ El núcleo son dos personajes con física de plataformas, tres tipos de pozo, pu
 | Lumo | Luz (amarillo cálido) | A / D mover, W saltar | Pozos de sombra y abismo |
 | Umbra | Sombra (violeta) | ← / → mover, ↑ saltar | Pozos de luz y abismo |
 
-Teclas globales: R reinicia el nivel al instante (reset total, ver *Victoria, derrota y puntaje*), Esc pausa, Tab cambia de personaje en modo un jugador.
+Teclas globales: R reinicia el nivel al instante (reset total, ver *Victoria, derrota y puntaje*), Esc pausa, M silencia el sonido, Tab cambia de personaje en modo un jugador.
 
 Teclas según el modo de control: en **dos jugadores** cada personaje usa las teclas de la tabla (Lumo A/D/W, Umbra flechas). En **un jugador** solo se usa el juego de teclas **A/D/W**, que maneja al personaje activo — sea Lumo o Umbra — y Tab alterna cuál de los dos está activo; las flechas quedan inactivas. Hasta que exista el selector de niveles con elección de modo (Hito 5), Tab cicla **2P → 1P(Lumo) → 1P(Umbra) → 2P** para poder probar los tres estados.
 
-Pausa (Esc): **congela todo** — física, cronómetro y animaciones. Mientras está activa solo se permite reanudar (Esc), reiniciar (R) o silenciar; Tab y las teclas de movimiento quedan deshabilitadas. El cronómetro de las estrellas nunca avanza pausado.
+Pausa (Esc): **congela todo** — física, cronómetro y animaciones. Mientras está activa solo se permite reanudar (Esc), reiniciar (R), silenciar o volver al menú principal; Tab y las teclas de movimiento quedan deshabilitadas. El cronómetro de las estrellas nunca avanza pausado.
 
 Parámetros de movimiento iniciales:
 
@@ -94,7 +94,7 @@ Criterio geométrico de "encima" / "pisar" (puertas y botones): se considera que
 
 ### Victoria, derrota y puntaje
 
-- Si un personaje muere, partículas de muerte durante 0,5 s y reinicio automático del nivel.
+- Si un personaje muere, partículas de muerte durante 0,5 s y aparece la pantalla de derrota ("Perdieron" con [Reintentar] [Menú]); R también reinicia.
 - Prioridad de muerte: si en un mismo frame un personaje muere y el otro cumple la condición de victoria, **gana la muerte** y se reinicia el nivel. La victoria solo se evalúa si ambos personajes están vivos al final del frame.
 - Reseteo (R y por muerte): **reset total del nivel** — spawns de ambos, cronómetro a 0, gemas sin recoger, botones sin pisar, palancas en su estado inicial, compuertas cerradas, cristales y barreras restaurados. Se mantiene el modo de control (1PJ/2PJ) y el progreso desbloqueado.
 - Al ganar: pantalla de resultado con tiempo, gemas y estrellas.
@@ -150,7 +150,7 @@ Cada `levels/NN.json` tiene esta estructura:
 | `v` | Gema violeta (la recoge Umbra) |
 
 - **`entities`** (array): botones, palancas y compuertas, que necesitan **ID** para vincularse entre sí. Cada entidad tiene `type` (`button` \| `lever` \| `gate`), `id` (string compartido entre los elementos que se controlan entre sí) y `x` / `y` (columna y fila en la grilla, 0-based). Las compuertas se deslizan hacia arriba al abrirse (ver *Mecánicas > Elementos del nivel*). Los botones y palancas se ubican **sobre el tile de piso** que se pisa (`x`/`y` apuntan a un `#`). IDs con color propio: `rojo`, `azul`, `verde`, `amarillo`. Una compuerta también puede usarse como **piso** (por ejemplo, un puente sobre el abismo): cerrada se pisa; abierta deja un hueco.
-- **`hints`** (array, opcional): carteles de ayuda que se dibujan en el nivel, `{ "x": 4, "y": 2, "text": "..." }` (columna/fila de la esquina superior izquierda del texto, 1–80 caracteres). Se usan en los niveles que introducen una mecánica.
+- **`hints`** (array, opcional): carteles de ayuda que se dibujan en el nivel, `{ "x": 4, "y": 2, "text": "..." }` (columna/fila de la esquina superior izquierda del texto, 1–80 caracteres). Desde T1 ningún nivel los usa; si se vuelven a usar, su texto tiene que estar cargado como key en Traducila.
 
 Asignación de gemas: **dorada (`d`) = Lumo**, **violeta (`v`) = Umbra**. Un personaje que toca la gema del otro simplemente la ignora (no la recoge, no hay penalización).
 
@@ -160,7 +160,7 @@ Además, `npm run solve-levels` (`scripts/solve-levels.mjs`) **resuelve** cada n
 
 ### Progresión de los 8 niveles
 
-Cada nivel usa la pantalla completa (30 × 17) con un **arquetipo distinto** y enseña o combina una idea. Los niveles que presentan una mecánica traen carteles (`hints`). Reglas de construcción (verificadas con `solve-levels`):
+Cada nivel usa la pantalla completa (30 × 17) con un **arquetipo distinto** y enseña o combina una idea. Reglas de construcción (verificadas con `solve-levels`):
 
 - **Saltos:** un escalón sube como máximo **2 tiles**; un hueco que se debe saltar mide como máximo **4 tiles**. Una plataforma no puede quedar 2 o 4 filas por encima del punto desde donde se salta (el techo corta el salto); 6 filas de separación es seguro.
 - **Lo que bloquea tiene que bloquear de verdad:** un pozo que el otro personaje no debe poder saltar mide **≥ 5 tiles**; un abismo que no se debe poder saltar mide **≥ 6 tiles** (con 5 se cruza parado en el borde). En pasillos de 2 tiles de alto no se puede saltar nada.
@@ -233,7 +233,8 @@ Pantallas:
 - **Menú principal:** [Un jugador] y [Dos jugadores] (no existe botón "Jugar"). Elegir el modo abre el **selector de niveles**.
 - **Selector de niveles:** niveles 01–08 con sus estrellas; desbloqueo en orden; solo se puede elegir el nivel más alto desbloqueado o los ya completados.
 - **HUD (durante el nivel):** tiempo en `mm:ss` (ej. `01:23`), gemas como `X/Y` (ej. `3/5`) e icono del modo (1P/2P). Sin estrellas en el HUD (no spoilear el objetivo de tiempo).
-- **Pausa:** [Reanudar (Esc)] [Reiniciar (R)] [Silencio] [Menú principal].
+- **Pausa:** [Continuar] [Reintentar] [Menú] (el sonido se silencia con M).
+- **Derrota:** "Perdieron" con [Reintentar] [Menú].
 - **Resultado:** tiempo, gemas y estrellas, y los botones [Siguiente nivel] [Reintentar] [Volver al menú]. En el nivel 8 se omite "Siguiente" (queda [Reintentar] [Volver al menú]).
 
 ## Arquitectura
@@ -391,7 +392,7 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 
 | # | Ambigüedad | Decisión |
 | --- | --- | --- |
-| A5 | Compuertas | Bloque sólido mientras existe (con colisión durante el tween de 200 ms). Abren **hacia arriba** (se retraen 1 tile; require un tile libre arriba que `validate-levels` verifica). Nunca matan: al cerrarse, si un personaje ocupa el tile destino, **detienen el cierre** hasta que quede libre. |
+| A5 | Compuertas | Bloque sólido mientras existe (con colisión durante el tween de 200 ms). Abren **hacia arriba** (se retraen 1 tile; desde N12 llevan arriba un dintel `#` o, si son puente, un tile libre `.`, y `validate-levels` lo verifica). Nunca matan: al cerrarse, si un personaje ocupa el tile destino, **detienen el cierre** hasta que quede libre. |
 | A7 | Palanca | Cualquiera de los dos puede usarla. Alterna **por borde de contacto** (una vez al entrar en contacto; no vuelve a alternar hasta salir y volver a entrar). Estado permanente hasta re-alternar o reiniciar el nivel. |
 | A8 | Cristal oscuro / barrera de luz | Pierden la solidez **al instante** del contacto con el personaje correcto; los 300 ms son solo la animación de disolución. |
 | B9 | Compuerta "injusta" (checklist Hito 4) | Injusta si (a) mata o aplasta a un personaje, o (b) deja a un personaje atrapado en un compartimento sin ningún switch/palanca alcanzable para reabrirlo. |
@@ -404,7 +405,7 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | --- | --- | --- |
 | C2 | Puntaje numérico vs. gemas + estrellas | No existe puntaje numérico: el progreso se mide por **gemas recogidas** (contador X/Y), **tiempo** y **estrellas**. En el documento se usa "gemas", no "puntaje". |
 | M3 | Botón "Jugar" en el menú | No existe: el menú principal ofrece directamente **[Un jugador]** y **[Dos jugadores]**; elegir el modo abre el selector de niveles. |
-| M4 | Botones de pausa y de resultado | Pausa: [Reanudar (Esc)] [Reiniciar (R)] [Silencio]. Resultado: [Siguiente nivel] [Reintentar] [Volver al menú]; en el nivel 8 se omite "Siguiente". |
+| M4 | Botones de pausa y de resultado | Pausa: [Reanudar (Esc)] [Reiniciar (R)] [Silencio] (desde U1 se suma [Menú principal]). Resultado: [Siguiente nivel] [Reintentar] [Volver al menú]; en el nivel 8 se omite "Siguiente". |
 | M5 | Formato del HUD | Tiempo en `mm:ss` (ej. `01:23`) + gemas `X/Y` (ej. `3/5`) + icono del modo (1P/2P). Sin estrellas en el HUD (no spoilear el objetivo de tiempo). |
 | M2 | Efectos de sonido faltantes | Se mantienen **solo los 5 efectos** del documento (salto, gema, botón, muerte, victoria). Compuerta, palanca, cristal, barrera y puerta **no se sonorizan**. |
 
@@ -415,7 +416,7 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | M6 | Objetos del nivel | `src/objects/` = { Player, Door, Gate, Button, Lever, Gem, Crystal, Barrier, Hazard }. Cada objeto con su lógica y su visual; Crystal y Barrier comparten una base mínima de bloque que se disuelve al contacto con el personaje correcto. |
 | M7 | Paredes/pisos/pozos sólidos | **staticGroup** de Arcade generado desde `levelParser` a partir de la grilla; sin tilemap. |
 | M8 | Pausa y carga de texturas | Pausa = **overlay dentro de `GameScene`** (`physics.pause()` + cronómetro y tweens detenidos); no existe escena Pause. `BootScene` genera el arte por código antes de arrancar (desde V1: Canvas 2D en vez de `Graphics + generateTexture`). |
-| M9 | Alcance de `validate-levels` | Confirmado el alcance completo documentado: nombre `NN.json` (ignora `test.json` y no-NN), `timeTarget` número > 0, grilla 17×30, alfabeto permitido, exactamente un `L`/`U`/`l`/`u`, `entities` válidas (type `button\|lever\|gate`, id no vacío, x/y dentro de la grilla) y tile libre arriba en cada compuerta. |
+| M9 | Alcance de `validate-levels` | Confirmado el alcance completo documentado: nombre `NN.json` (ignora `test.json` y no-NN), `timeTarget` número > 0, grilla 17×30, alfabeto permitido, exactamente un `L`/`U`/`l`/`u`, `entities` válidas (type `button\|lever\|gate`, id no vacío, x/y dentro de la grilla) y tile libre arriba en cada compuerta. **Ampliado en v2** (ver *Formato JSON del nivel*): dintel `#` o tile libre arriba, botones/palancas sobre `#`, IDs emparejados y `hints`. |
 | M10 | Criterio de los 8 niveles | Completabilidad probada en **modo un jugador**; la estrella de tiempo se verifica por **cálculo de rutas** (no hace falta que el agente baje el cronómetro jugando). |
 | M11 | Versiones en `package.json` | Se fijan **sin `^`**: `typescript 7.0.2`, `vite 8.3.3`, `vitest 5.0.3`, `@types/node 24.19.1` (Phaser ya estaba en 4.2.1). |
 | C1 | Duraciones (*Resumen* vs. *Plan*) | Se mantiene "7 a 10 días" y se aclara que el plan estima "8 días hábiles" dentro de ese rango. |
@@ -428,10 +429,10 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | N2 | Progresión de mecánicas | Se relaja: la **primera compuerta cooperativa** (dos botones del mismo ID, uno a cada lado) aparece en el nivel **1**, en vez de introducirse recién en el 4. |
 | N3 | Anti-salto de compuertas/bloques | Cada compuerta, y cada cristal/barrera que deba bloquear, lleva encima un bloque sólido (**lintel** o **techo/tramo bajo techo**) que impide saltarlo por arriba. Verificado por la geometría del salto (≈3 tiles de alto). |
 | N4 | Cajas y plataformas móviles | Siguen **fuera de alcance**; el rediseño no las introduce. |
-| N5 | Uso de la pantalla | Los niveles **1 a 4** se rediseñan para **llenar las 30 × 17 celdas** en ancho y alto (una sola pantalla, `Scale.FIT`, sin scroll) y **variar el arquetipo por nivel** (torre, pozos, abismo, compuertas encadenadas). Los niveles 5-8 quedan pendientes de revisión con el mismo criterio. |
-| N6 | Bloqueo de compuertas cooperativas | El muro que aloja la compuerta ocupa la **columna completa (filas 0-12)**, de modo que no se puede rodear la compuerta ni por arriba ni por los lados; la fila 13 queda libre como tile de retracción (la exige `levelParser`). |
-| N6b | Verificación de alcance | Para los niveles 1-4 se comprobó con un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, techo y colisión lateral) que ambos spawns alcanzan sus puertas y sus 4 gemas. El checker anterior (sin colisión lateral) daba falsos positivos; el simulador detectó que el primer rediseño de 01-04 no era pasable (techos de plataformas sobre el arco de salto y plataformas pegadas a muros). Los niveles 5–8 quedan pendientes de ese pase. |
-| N7 | Pasabilidad por encima del llenado de pantalla | Ante el conflicto entre "llenar las 30 × 17 celdas" y una geometría saltable, se **prioriza la pasabilidad**: escalones de **≤2 tiles** de altura y **≤4 tiles** de ancho, sin plataformas superpuestas sobre la trayectoria del salto. Puede quedar la parte superior libre. Los `timeTarget` (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) quedan a revisar jugando. |
+| N5 | Uso de la pantalla | Los niveles **1 a 4** se rediseñan para **llenar las 30 × 17 celdas** en ancho y alto (una sola pantalla, `Scale.FIT`, sin scroll) y **variar el arquetipo por nivel** (torre, pozos, abismo, compuertas encadenadas). Los niveles 5-8 quedan pendientes de revisión con el mismo criterio. **Reemplazado por N8–N12** (niveles v2). |
+| N6 | Bloqueo de compuertas cooperativas | El muro que aloja la compuerta ocupa la **columna completa (filas 0-12)**, de modo que no se puede rodear la compuerta ni por arriba ni por los lados; la fila 13 queda libre como tile de retracción (la exige `levelParser`). **Reemplazado por N8–N12** (niveles v2). |
+| N6b | Verificación de alcance | Para los niveles 1-4 se comprobó con un **simulador de la física real** (AABB 24 × 40, gravedad 1200, salto −480, techo y colisión lateral) que ambos spawns alcanzan sus puertas y sus 4 gemas. El checker anterior (sin colisión lateral) daba falsos positivos; el simulador detectó que el primer rediseño de 01-04 no era pasable (techos de plataformas sobre el arco de salto y plataformas pegadas a muros). Los niveles 5–8 quedan pendientes de ese pase. **Reemplazado por N8–N12** (niveles v2). |
+| N7 | Pasabilidad por encima del llenado de pantalla | Ante el conflicto entre "llenar las 30 × 17 celdas" y una geometría saltable, se **prioriza la pasabilidad**: escalones de **≤2 tiles** de altura y **≤4 tiles** de ancho, sin plataformas superpuestas sobre la trayectoria del salto. Puede quedar la parte superior libre. Los `timeTarget` (01: 45 s, 02: 50 s, 03: 55 s, 04: 55 s) quedan a revisar jugando. **Reemplazado por N8–N12** (niveles v2). |
 
 ### Resueltas — rediseño visual y de niveles (v2)
 
@@ -449,4 +450,8 @@ Esta sección registra las ambigüedades detectadas en el análisis del document
 | N12 | Atajos por el tamaño reducido | Con 1 tile de alto, el tile libre de retracción encima de cada compuerta dejaba pasar **por encima de la compuerta cerrada** en todos los niveles. Se cambia la regla: las compuertas de pasillo llevan **dintel `#` justo arriba** y se esconden en él al abrirse (dibujadas por debajo de los muros); las compuertas-puente siguen con aire arriba. `validate-levels` acepta `#` o `.` arriba. `solve-levels --atajos` confirma que ningún botón ni palanca se puede saltear en 01–08. |
 | N13 | Quedarse parado en el hueco de una compuerta | Regla vigente (A5): una compuerta no se cierra mientras alguien ocupa su tile. Por eso, en las compuertas cooperativas de 1 y 8, quien pasa puede quedarse en el hueco para que el otro cruce sin usar el segundo botón. Es un atajo menor (el primer botón sigue siendo obligatorio) y se mantiene para no arriesgar que la compuerta atrape o aplaste a alguien. |
 | U1 | Salir del nivel desde la pausa | La pausa suma **[Menú principal]**: vuelve al menú sin guardar el intento en curso (el progreso ya ganado no se toca). |
+| T1 | Textos para traducir | Todo el texto visible se reduce a **9 claves** (desde T2 viven en `src/enums/keys.js`): título, menú principal, victoria, derrota y los botones que comparten (la pausa y el selector reutilizan los mismos). El resto usa números, íconos y teclas. Se quitan el subtítulo, la leyenda con palabras (queda con personajes, emblemas y teclas), el título del selector, los rótulos "Tiempo"/"Gemas" del resultado (quedan reloj y gema), el título y el botón de silencio de la pausa (ahora tecla **M**) y los carteles de los niveles. Se agrega la **pantalla de derrota**, que reemplaza al reinicio automático. |
+| T2 | Traducciones con Traducila | Integración oficial: `src/services/translations.js` descargado de `UNRaf-PROGRAMACION/phaser-traducila-ejemplo` (rama `main`) sin cambios salvo `PROJECT_ID` = `9d7537e6-019f-4e18-8b7b-934d82cc7fa8`. Keys en `src/enums/keys.js` (las 9 cargadas en Traducila, con su texto en español), idiomas en `src/enums/languages.js` y estados en `src/enums/status.js`. Los textos se piden con `getPhrase(KEYS.X)`. `src/services/language.ts` (propio) carga el idioma inicial en `BootScene` antes del menú (guardado por el jugador → `getLanguageConfig()` → español), espera la respuesta y, si la API falla, vuelve al español. El menú tiene un selector **ES / EN / FR** que actualiza los textos con `setText` sin recargar. `languages.js` incluye también `PT` y `DE` porque el archivo oficial los importa (sin ellos no compila); el juego ofrece ES, EN y FR. `tsconfig` suma `allowJs`. |
+| T3 | Francés | Se agrega `FR = "fr"` a `languages.js` y al selector del menú, con sus 9 traducciones cargadas en Traducila (verificadas contra la API). El archivo oficial no lo incluye en su detección automática (URL / navegador), así que se elige con el botón **FR**; la elección queda guardada. |
+| U2 | Botones del menú y las pantallas | La zona de clic coincide con el botón dibujado (antes estaba corrida medio botón hacia arriba y a la izquierda). Se iluminan solo con el cursor encima, muestran el cursor de mano y los de overlays ocultos no responden. |
 

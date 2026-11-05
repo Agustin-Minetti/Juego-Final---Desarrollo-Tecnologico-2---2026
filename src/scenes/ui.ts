@@ -19,8 +19,9 @@ export function textStyle(color: string, fontSize: number): Phaser.Types.GameObj
 }
 
 /**
- * Botón de UI provisional generado por código (rectángulo + texto) con la
- * paleta de `colors.ts`. Se ajusta en el Hito 6 (pulido).
+ * Botón de UI generado por código (rectángulo + texto) con la paleta de
+ * `colors.ts`. Se ilumina al pasar el cursor (cursor de mano) y responde solo
+ * dentro de su rectángulo.
  */
 export function createButton(
   scene: Phaser.Scene,
@@ -36,10 +37,16 @@ export function createButton(
 
   const background = scene.add.rectangle(0, 0, width, height, colorToNumber(COLORS.gate));
   const text = scene.add.text(0, 0, label, textStyle(COLORS.text, fontSize)).setOrigin(0.5);
-  const hitArea = new Phaser.Geom.Rectangle(-width / 2, -height / 2, width, height);
   const root = scene.add.container(x, y, [background, text]);
   root.setSize(width, height);
-  root.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
+  // Zona de clic: en un Container, Phaser mide el puntero desde la esquina
+  // superior izquierda del tamaño (suma displayOriginX/Y), así que el
+  // rectángulo va de (0, 0) a (width, height) y coincide con el botón dibujado.
+  const interactiveConfig: Phaser.Types.Input.InputConfiguration = {
+    hitArea: new Phaser.Geom.Rectangle(0, 0, width, height),
+    hitAreaCallback: Phaser.Geom.Rectangle.Contains,
+    useHandCursor: true,
+  };
 
   let enabled = options.enabled ?? true;
 
@@ -56,7 +63,7 @@ export function createButton(
     enabled = value;
     paint();
     if (enabled) {
-      root.setInteractive(hitArea, Phaser.Geom.Rectangle.Contains);
+      root.setInteractive(interactiveConfig);
     } else {
       root.disableInteractive();
     }
@@ -65,6 +72,7 @@ export function createButton(
   root.on('pointerover', () => {
     if (enabled) {
       background.setFillStyle(colorToNumber(COLORS.gateEdge));
+      text.setColor(COLORS.lumo);
     }
   });
   root.on('pointerout', paint);

@@ -5,6 +5,8 @@ import { isDebugMode } from '../config/debug';
 import { TILE_SIZE } from '../config/game';
 import { KEY_CODES } from '../config/keys';
 import { DEFAULT_LEVEL, hasLevel, LEVELS, levelIds } from '../config/levels';
+import { KEYS } from '../enums/keys';
+import { getPhrase } from '../services/translations';
 import { TEXTURE_KEYS, WALL_VARIANTS, wallTextureKey } from '../config/textures';
 import { createPoolEmitter, createTrail, deathBurst, type PoolKind } from '../fx/particles';
 import { playSfx } from '../fx/sfx';
@@ -44,8 +46,9 @@ import { Gem } from '../objects/Gem';
 import { Hazard } from '../objects/Hazard';
 import { Lever } from '../objects/Lever';
 import { Player, type PlayerKeys } from '../objects/Player';
-import { createButton, textStyle, type UiButton } from './ui';
+import { createButton, textStyle } from './ui';
 
+/** Tiempo de la explosión antes de mostrar la pantalla de derrota. */
 const DEATH_PAUSE_MS = 500;
 const PIT_CONTACT_MARGIN = 2;
 const HINT_STYLE: Phaser.Types.GameObjects.Text.TextStyle = {
@@ -90,7 +93,8 @@ export class GameScene extends Phaser.Scene {
   private hudTime?: Phaser.GameObjects.Text;
   private hudGems?: Phaser.GameObjects.Text;
   private pauseOverlay?: Phaser.GameObjects.Container;
-  private muteButton?: UiButton;
+  private loseOverlay?: Phaser.GameObjects.Container;
+  private muteKey?: Phaser.Input.Keyboard.Key;
   private pitBodies: Hazard[] = [];
   private pitCells = new Map<string, HazardType>();
   private abyssCells = new Map<string, HazardType>();
@@ -186,6 +190,7 @@ export class GameScene extends Phaser.Scene {
     this.swapKey = keyboard.addKey(KEY_CODES.swapCharacter);
     this.restartKey = keyboard.addKey(KEY_CODES.restart);
     this.pauseKey = keyboard.addKey(KEY_CODES.pause);
+    this.muteKey = keyboard.addKey(KEY_CODES.mute);
     this.debugKeys = KEY_CODES.debugLevels.map((code) => keyboard.addKey(code));
 
     this.lumo = new Player(this, level.spawns.lumo.x, level.spawns.lumo.y, TEXTURE_KEYS.lumo, {
@@ -227,6 +232,7 @@ export class GameScene extends Phaser.Scene {
 
     this.createHud();
     this.createPauseOverlay();
+    this.createLoseOverlay();
 
     this.trails.push(createTrail(this, this.lumo, 'spark'));
     this.trails.push(createTrail(this, this.umbra, 'smoke'));
@@ -258,54 +264,56 @@ export class GameScene extends Phaser.Scene {
       .setDepth(250);
   }
 
-  /** Pausa como overlay dentro de GameScene (M8): congela física y tweens. */
+  /**
+   * Pausa como overlay dentro de GameScene (M8): congela física y tweens.
+   * Solo botones (reutilizan los textos de las otras pantallas); el sonido se
+   * silencia con la tecla M.
+   */
   private createPauseOverlay(): void {
     const cx = this.scale.width / 2;
     const cy = this.scale.height / 2;
-
     const shade = this.add
       .rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.6)
       .setDepth(300);
-    const title = this.add
-      .text(cx, cy - 140, 'Pausa', {
-        fontFamily: 'monospace',
-        fontSize: '36px',
-        color: COLORS.text,
-      })
-      .setOrigin(0.5)
-      .setDepth(301);
-
-    const resume = createButton(this, cx, cy - 60, 'Reanudar (Esc)', () => this.togglePause(), {
-      width: 260,
-    });
-    const restart = createButton(this, cx, cy, 'Reiniciar (R)', () => this.restartLevel(this.levelId), {
-      width: 260,
-    });
-    this.muteButton = createButton(this, cx, cy + 60, this.muteLabel(), () => this.toggleMute(), {
-      width: 260,
-    });
-    const menu = createButton(this, cx, cy + 120, 'Menú principal', () => this.goToMenu(), {
-      width: 260,
-    });
-
+    const resume = createButton(this, cx, cy - 60, getPhrase(KEYS.CONTINUAR), () => this.togglePause(), { width: 260 });
+    const restart = createButton(this, cx, cy, getPhrase(KEYS.REINTENTAR), () => this.restartLevel(this.levelId), { width: 260 });
+    const menu = createButton(this, cx, cy + 60, getPhrase(KEYS.MENU), () => this.goToMenu(), { width: 260 });
     this.pauseOverlay = this.add
-      .container(0, 0, [shade, title, resume.root, restart.root, this.muteButton.root, menu.root])
+      .container(0, 0, [shade, resume.root, restart.root, menu.root])
       .setDepth(300)
       .setVisible(false);
   }
 
-  /** Vuelve al menú principal desde la pausa (sin guardar el intento en curso). */
+  /** Pantalla de derrota: aparece tras la explosión; R también reinicia. */
+  private createLoseOverlay(): void {
+    const cx = this.scale.width / 2;
+    const cy = this.scale.height / 2;
+    const shade = this.add
+      .rectangle(cx, cy, this.scale.width, this.scale.height, 0x000000, 0.6)
+      .setDepth(300);
+    const title = this.add
+      .text(cx, cy - 90, getPhrase(KEYS.PERDIERON), {
+        fontFamily: 'monospace',
+        fontSize: '40px',
+        color: COLORS.text,
+      })
+      .setOrigin(0.5)
+      .setDepth(301);
+    const retry = createButton(this, cx, cy, getPhrase(KEYS.REINTENTAR), () => this.restartLevel(this.levelId), { width: 260 });
+    const menu = createButton(this, cx, cy + 60, getPhrase(KEYS.MENU), () => this.goToMenu(), { width: 260 });
+    this.loseOverlay = this.add
+      .container(0, 0, [shade, title, retry.root, menu.root])
+      .setDepth(300)
+      .setVisible(false);
+  }
+
+  /** Vuelve al menú principal (sin guardar el intento en curso). */
   private goToMenu(): void {
     this.scene.start('Menu');
   }
 
-  private muteLabel(): string {
-    return this.sound.mute ? 'Silencio: ON' : 'Silencio: OFF';
-  }
-
   private toggleMute(): void {
     this.sound.mute = !this.sound.mute;
-    this.muteButton?.label.setText(this.muteLabel());
   }
 
   private togglePause(): void {
@@ -556,6 +564,9 @@ export class GameScene extends Phaser.Scene {
     if (isDebugMode()) {
       this.updateDebugKeys();
     }
+    if (this.muteKey && Phaser.Input.Keyboard.JustDown(this.muteKey)) {
+      this.toggleMute();
+    }
     if (this.pauseKey && Phaser.Input.Keyboard.JustDown(this.pauseKey)) {
       this.togglePause();
     }
@@ -637,7 +648,7 @@ export class GameScene extends Phaser.Scene {
     }
     this.cameras.main.shake(150, 0.012);
     playSfx(this, SFX_KEYS.death);
-    this.time.delayedCall(DEATH_PAUSE_MS, () => this.restartLevel(this.levelId));
+    this.time.delayedCall(DEATH_PAUSE_MS, () => this.loseOverlay?.setVisible(true));
   }
 
   private onVictory(): void {
@@ -701,6 +712,6 @@ export class GameScene extends Phaser.Scene {
       this.controlState.mode === 'two-player'
         ? '2P'
         : `1P ${this.controlState.active === 'lumo' ? 'Lumo' : 'Umbra'}`;
-    return `${this.levelId} · ${mode} · gemas ${this.collectedGems}/${this.totalGems}`;
+    return `${this.levelId} · ${mode} · ${this.collectedGems}/${this.totalGems}`;
   }
 }

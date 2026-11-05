@@ -520,3 +520,50 @@ Pendiente humano:
 - [ ] Commit y push de los cambios.
 - [x] GDD `.docx` actualizado con el rediseño (personajes, progresión de niveles, estética sol/luna, compuertas con dintel, scripts, pausa y sección final *Cambios del rediseño (v2)*). `README.md` reescrito (cómo jugar, instalar, comandos, Vercel).
 
+### Textos reducidos para traducir (claves)
+
+Pedido: dejar solo el texto esencial (menú principal, pantalla de victoria y de derrota) con una clave por texto para cargarlo en Traducila.
+
+Hecho:
+
+- 9 textos con clave (reemplazados después por la integración con Traducila, ver abajo).
+- Menú: título, dos botones y leyenda sin palabras (personajes, sol/luna y teclas).
+- Selector de niveles: sin título; botón [Menú].
+- Victoria: "¡Ganaron!", estrellas, tiempo, gema + X/Y y [Siguiente] [Reintentar] [Menú].
+- **Derrota (nuevo):** tras la explosión aparece "Perdieron" con [Reintentar] [Menú] (antes se reiniciaba solo). R sigue reiniciando.
+- Pausa: [Continuar] [Reintentar] [Menú]; el silencio pasa a la tecla **M**.
+- Se quitaron los carteles (`hints`) de los 8 niveles.
+
+Verificaciones: typecheck en verde · 102/102 tests · validate-levels en verde · capturas de menú, selector, pausa, derrota y victoria sin errores de consola.
+
+Pendiente: resuelto en *Integración con Traducila*.
+
+### Integración con Traducila
+
+Hecho:
+
+- `src/services/translations.js`: descargado con `curl` del repo oficial `UNRaf-PROGRAMACION/phaser-traducila-ejemplo` (`main`); única diferencia con el original: `PROJECT_ID` = `9d7537e6-019f-4e18-8b7b-934d82cc7fa8` (verificado con `diff`).
+- `src/enums/keys.js` (las 9 keys del proyecto de Traducila), `src/enums/languages.js` (EN, ES, y PT/DE que exige el archivo oficial), `src/enums/status.js`.
+- `src/services/language.ts` (propio): idioma inicial, carga con espera y vuelta al español si la API falla; guarda la elección del jugador.
+- `BootScene` carga las traducciones antes de abrir el menú. Menú con selector ES / EN que actualiza los textos sin recargar. Menú, selector de niveles, pausa, derrota y victoria usan `getPhrase(KEYS.X)`. Se borraron `src/config/texts.ts` y su test. `tsconfig`: `allowJs`.
+
+Verificaciones: API de Traducila responde 200 para `en` (9 traducciones, coinciden con las 9 keys) y `es` (sin palabras: el español usa las keys) · typecheck · 100/100 tests · validate-levels · build · prueba en navegador con la respuesta real de la API: menú, derrota y victoria en inglés, cambio ES ↔ EN sin recargar, idioma recordado al recargar y vuelta al español con la API caída; sin errores de consola.
+
+Pendiente:
+
+- ~~Keys "Siguente" y "Dos Jugadores"~~: corregidas en Traducila ("Siguiente", "Dos jugadores") y en `src/enums/keys.js` (la constante pasa a `KEYS.SIGUIENTE`). Verificado contra la API.
+
+### Francés (fr)
+
+- Traducciones al francés cargadas en Traducila y verificadas contra la API (9/9 keys).
+- `src/enums/languages.js`: `FR = "fr"`. `src/services/language.ts`: FR en la lista de idiomas del juego, así que el menú muestra **ES / EN / FR**.
+- Como `translations.js` (oficial) no incluye FR en `getLanguageConfig()`, el francés no se detecta solo por URL ni navegador: se elige con el botón y queda guardado.
+
+Verificaciones: typecheck · tests · build · prueba en navegador con la respuesta real de la API en francés.
+
+### Botones: zona de clic y hover
+
+- Problema: los botones se iluminaban o respondían con el cursor cerca pero fuera de ellos, o se iluminaba el botón vecino. En un `Container`, Phaser mide el puntero desde la esquina superior izquierda del tamaño, y la zona de clic estaba definida centrada (`-w/2, -h/2`), así que quedaba corrida medio botón.
+- `src/scenes/ui.ts`: la zona pasa a `Rectangle(0, 0, width, height)` (coincide con el dibujo) y se agrega `useHandCursor`. Los botones deshabilitados u ocultos no reciben eventos.
+
+Verificaciones: typecheck · tests · build · prueba en navegador: hover solo dentro de cada botón (menú, selector de idioma, niveles, pausa, derrota y victoria), clics correctos y botones de overlays ocultos sin respuesta.
