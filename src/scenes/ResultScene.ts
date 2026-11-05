@@ -2,6 +2,8 @@ import Phaser from 'phaser';
 import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
 import { levelIds } from '../config/levels';
+import { KEYS } from '../enums/keys';
+import { getPhrase } from '../services/translations';
 import { TEXTURE_KEYS } from '../config/textures';
 import { fadeIn } from '../fx/transitions';
 import { controlStateForMode, type ControlMode } from '../logic/controlMode';
@@ -37,9 +39,9 @@ export class ResultScene extends Phaser.Scene {
     const nextId = hasNext ? ids[data.levelIndex + 1] : null;
 
     this.add
-      .text(cx, 90, `Nivel ${data.levelId} completado`, {
+      .text(cx, 90, getPhrase(KEYS.GANARON), {
         fontFamily: 'monospace',
-        fontSize: '36px',
+        fontSize: '40px',
         color: COLORS.text,
       })
       .setOrigin(0.5);
@@ -53,26 +55,28 @@ export class ResultScene extends Phaser.Scene {
       .setOrigin(0.5);
 
     this.add
-      .text(cx, 250, `Tiempo ${formatTime(data.elapsedMs)}`, {
+      .text(cx, 250, formatTime(data.elapsedMs), {
         fontFamily: 'monospace',
         fontSize: '24px',
         color: COLORS.text,
       })
       .setOrigin(0.5);
 
+    // gemas: ícono + número (sin palabras)
+    this.add.image(cx - 34, 295, TEXTURE_KEYS.gemGold).setScale(0.9);
     this.add
-      .text(cx, 290, `Gemas ${data.gemsCollected}/${data.totalGems}`, {
+      .text(cx - 12, 295, `${data.gemsCollected}/${data.totalGems}`, {
         fontFamily: 'monospace',
         fontSize: '24px',
         color: COLORS.gemGold,
       })
-      .setOrigin(0.5);
+      .setOrigin(0, 0.5);
 
     const buttonY = GAME_HEIGHT - 60;
     const actions: Array<{ label: string; run: () => void }> = [];
     if (nextId !== null) {
       actions.push({
-        label: 'Siguiente nivel',
+        label: getPhrase(KEYS.SIGUIENTE),
         run: () =>
           this.scene.start('Game', {
             levelId: nextId,
@@ -81,14 +85,14 @@ export class ResultScene extends Phaser.Scene {
       });
     }
     actions.push({
-      label: 'Reintentar',
+      label: getPhrase(KEYS.REINTENTAR),
       run: () =>
         this.scene.start('Game', {
           levelId: data.levelId,
           controlState: controlStateForMode(data.mode),
         }),
     });
-    actions.push({ label: 'Volver al menú', run: () => this.scene.start('Menu') });
+    actions.push({ label: getPhrase(KEYS.MENU), run: () => this.scene.start('Menu') });
 
     const width = 240;
     const gap = 20;

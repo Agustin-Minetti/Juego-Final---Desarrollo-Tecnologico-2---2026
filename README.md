@@ -15,7 +15,8 @@ Hecho con **Phaser 4.2.1 + Vite + TypeScript**. Corre en el navegador de escrito
 | Puede pisar o romper lo que lleva un | ☀ sol (pozo de luz, cristal oscuro) | ☾ luna (pozo de sombra, barrera de luz) |
 | Muere en | pozo de sombra y abismo | pozo de luz y abismo |
 
-- **R** reinicia el nivel, **Esc** pausa (Reanudar, Reiniciar, Silencio, Menú principal).
+- **R** reinicia el nivel, **Esc** pausa (Continuar, Reintentar, Menú), **M** silencia el sonido.
+- Idiomas: español, inglés y francés (botones **ES / EN / FR** en el menú). Las traducciones vienen de Traducila (`src/services/translations.js`, keys en `src/enums/keys.js`).
 - **Tab** cambia de personaje en modo un jugador.
 - Los botones abren las compuertas de su mismo color mientras alguien los pisa; las palancas las dejan abiertas hasta volver a moverlas.
 - Estrellas por nivel: 1 por terminar, 1 por juntar todas las gemas y 1 por terminar bajo el tiempo objetivo. El progreso se guarda en el navegador.

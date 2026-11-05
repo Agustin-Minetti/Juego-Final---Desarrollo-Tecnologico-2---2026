@@ -62,17 +62,5 @@
       "x": 26,
       "y": 6
     }
-  ],
-  "hints": [
-    {
-      "x": 4,
-      "y": 2,
-      "text": "La palanca verde abre la compuerta de la torre..."
-    },
-    {
-      "x": 4,
-      "y": 3,
-      "text": "...y también las piedras verdes del abismo"
-    }
   ]
 }

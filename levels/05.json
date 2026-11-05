@@ -92,12 +92,5 @@
       "x": 6,
       "y": 3
     }
-  ],
-  "hints": [
-    {
-      "x": 5,
-      "y": 0,
-      "text": "Cada torre tiene los botones de la otra"
-    }
   ]
 }

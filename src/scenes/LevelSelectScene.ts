@@ -1,7 +1,8 @@
 import Phaser from 'phaser';
-import { COLORS } from '../config/colors';
 import { GAME_HEIGHT, GAME_WIDTH } from '../config/game';
 import { levelIds } from '../config/levels';
+import { KEYS } from '../enums/keys';
+import { getPhrase } from '../services/translations';
 import { TEXTURE_KEYS } from '../config/textures';
 import { fadeIn } from '../fx/transitions';
 import { controlStateForMode, type ControlMode } from '../logic/controlMode';
@@ -33,15 +34,6 @@ export class LevelSelectScene extends Phaser.Scene {
     this.add.image(0, 0, TEXTURE_KEYS.background).setOrigin(0, 0);
     this.add.rectangle(0, 0, GAME_WIDTH, GAME_HEIGHT, 0x0c0816, 0.35).setOrigin(0, 0);
 
-    const modeLabel = mode === 'two-player' ? 'Dos jugadores' : 'Un jugador';
-    this.add
-      .text(GAME_WIDTH / 2, 60, `Elegir nivel · ${modeLabel}`, {
-        fontFamily: 'monospace',
-        fontSize: '28px',
-        color: COLORS.text,
-      })
-      .setOrigin(0.5);
-
     const rows = Math.ceil(ids.length / COLUMNS);
     const totalWidth = COLUMNS * CELL_WIDTH + (COLUMNS - 1) * GAP;
     const totalHeight = rows * CELL_HEIGHT + (rows - 1) * GAP;
@@ -66,7 +58,7 @@ export class LevelSelectScene extends Phaser.Scene {
       );
     });
 
-    createButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 46, 'Volver', () => this.scene.start('Menu'), {
+    createButton(this, GAME_WIDTH / 2, GAME_HEIGHT - 46, getPhrase(KEYS.MENU), () => this.scene.start('Menu'), {
       width: 200,
       height: 40,
       fontSize: 16,

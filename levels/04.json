@@ -56,17 +56,5 @@
       "x": 24,
       "y": 14
     }
-  ],
-  "hints": [
-    {
-      "x": 9,
-      "y": 2,
-      "text": "Lumo arriba, Umbra abajo:"
-    },
-    {
-      "x": 9,
-      "y": 3,
-      "text": "cada botón abre el camino del otro"
-    }
   ]
 }
